@@ -25,3 +25,12 @@ func NewTestMonster() *entity.Monster {
 		AvatarURL: fmt.Sprintf("https://example.com/%v.png", uid),
 	}
 }
+
+func NewTestEvent() *entity.Event {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	uid := uuid.NewString()
+	return &entity.Event{
+		ID:   r.Intn(100),
+		Name: fmt.Sprintf("event_%v", uid),
+	}
+}

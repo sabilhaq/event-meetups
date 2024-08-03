@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Wedding"
+  },
+  {
+    "id": 2,
+    "name": "Exhibition"
+  },
+  {
+    "id": 3,
+    "name": "Bazaar"
+  },
+  {
+    "id": 4,
+    "name": "Workshop"
+  },
+  {
+    "id": 5,
+    "name": "Conference"
+  }
+]

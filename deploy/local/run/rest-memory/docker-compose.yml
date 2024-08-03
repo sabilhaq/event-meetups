@@ -13,11 +13,14 @@ services:
       - ../../../../cmd/server:/go/src/github.com/Haraj-backend/hex-monscape/cmd/server
       - ../../../../.output/go/pkg:/go/pkg
       - ./data.json:/data/data.json
+      - ./events.json:/data/events.json
     ports:
       - 9186:9186
     environment:
       - STORAGE_TYPE=memory
       - STORAGE_MEMORY_MONSTER_DATA_PATH=/data/data.json
+      - STORAGE_MEMORY_EVENT_DATA_PATH=/data/events.json
+      - STORAGE_MEMORY_USER_DATA_PATH=/data/users.json
 
   client:
     build:

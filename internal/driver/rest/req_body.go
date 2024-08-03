@@ -14,3 +14,16 @@ func (rb newGameReqBody) Validate() error {
 	}
 	return nil
 }
+
+type newSessionReqBody struct {
+	Username string `json:"username" validate:"nonzero"`
+	Password string `json:"password" validate:"nonzero"`
+}
+
+func (rb newSessionReqBody) Validate() error {
+	err := validator.Validate(rb)
+	if err != nil {
+		return NewBadRequestError(err.Error())
+	}
+	return nil
+}

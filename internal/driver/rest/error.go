@@ -36,7 +36,7 @@ func NewBadRequestError(msg string) *Error {
 	return &Error{
 		StatusCode: http.StatusBadRequest,
 		Err:        "ERR_BAD_REQUEST",
-		Message:    msg,
+		Message:    fmt.Sprintf("invalid value of `%s`", msg),
 	}
 }
 
@@ -69,5 +69,13 @@ func NewInvalidBattleStateError() *Error {
 		StatusCode: http.StatusConflict,
 		Err:        "ERR_INVALID_BATTLE_STATE",
 		Message:    "invalid battle state",
+	}
+}
+
+func NewSessionInvalidCredsError() *Error {
+	return &Error{
+		StatusCode: http.StatusBadRequest,
+		Err:        "ERR_INVALID_CREDS",
+		Message:    "invalid username or password",
 	}
 }

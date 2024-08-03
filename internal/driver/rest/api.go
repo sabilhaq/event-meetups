@@ -16,12 +16,16 @@ import (
 	"gopkg.in/validator.v2"
 
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/battle"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
 )
 
 type APIConfig struct {
-	PlayingService play.Service   `validate:"nonnil"`
-	BattleService  battle.Service `validate:"nonnil"`
+	PlayingService play.Service    `validate:"nonnil"`
+	BattleService  battle.Service  `validate:"nonnil"`
+	EventService   event.Service   `validate:"nonnil"`
+	SessionService session.Service `validate:"nonnil"`
 	IsWebEnabled   bool
 }
 
@@ -35,17 +39,21 @@ func NewAPI(cfg APIConfig) (*API, error) {
 		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 	a := &API{
-		playService:   cfg.PlayingService,
-		battleService: cfg.BattleService,
-		isWebEnabled:  cfg.IsWebEnabled,
+		playService:    cfg.PlayingService,
+		battleService:  cfg.BattleService,
+		eventService:   cfg.EventService,
+		sessionService: cfg.SessionService,
+		isWebEnabled:   cfg.IsWebEnabled,
 	}
 	return a, nil
 }
 
 type API struct {
-	playService   play.Service
-	battleService battle.Service
-	isWebEnabled  bool
+	playService    play.Service
+	battleService  battle.Service
+	eventService   event.Service
+	sessionService session.Service
+	isWebEnabled   bool
 }
 
 func (a *API) GetHandler() http.Handler {
@@ -64,6 +72,8 @@ func (a *API) GetHandler() http.Handler {
 
 	r.Get("/health", a.serveHealthCheck)
 	r.Get("/partners", a.serveGetAvailablePartners)
+	r.Post("/session", a.serveCreateSession)
+	r.Get("/events", a.serveGetEvents)
 	r.Route("/games", func(r chi.Router) {
 		r.Post("/", a.serveNewGame)
 		r.Route("/{game_id}", func(r chi.Router) {
@@ -117,6 +127,38 @@ func (a *API) serveGetAvailablePartners(w http.ResponseWriter, r *http.Request) 
 	render.Render(w, r, NewSuccessResp(map[string]interface{}{
 		"partners": partners,
 	}))
+}
+
+func (a *API) serveGetEvents(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	events, err := a.eventService.GetEvents(ctx)
+	if err != nil {
+		render.Render(w, r, NewErrorResp(err))
+		return
+	}
+	render.Render(w, r, NewSuccessResp(events))
+}
+
+func (a *API) serveCreateSession(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var rb newSessionReqBody
+	err := json.NewDecoder(r.Body).Decode(&rb)
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+	err = rb.Validate()
+	if err != nil {
+		render.Render(w, r, NewErrorResp(err))
+		return
+	}
+	session, err := a.sessionService.CreateSession(ctx, rb.Username, rb.Password)
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(session))
 }
 
 func (a *API) serveNewGame(w http.ResponseWriter, r *http.Request) {
@@ -242,6 +284,8 @@ func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		err = NewGameNotFoundError()
 	case play.ErrPartnerNotFound:
 		err = NewPartnerNotFoundError()
+	case session.ErrInvalidCreds:
+		err = NewSessionInvalidCredsError()
 	default:
 		err = NewInternalServerError(err.Error())
 	}

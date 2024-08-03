@@ -10,7 +10,9 @@ import (
 	"github.com/gosidekick/goconfig"
 
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/battle"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -48,10 +50,29 @@ func main() {
 		log.Fatalf("unable to initialize battle service due: %v", err)
 	}
 
+	// initialize event service
+	eventService, err := event.NewService(event.ServiceConfig{
+		EventStorage: deps.EventEventStorage,
+	})
+	if err != nil {
+		log.Fatalf("unable to initialize event service due: %v", err)
+	}
+
+	// initialize session service
+	sessionService, err := session.NewService(session.ServiceConfig{
+		SessionStorage: deps.SessionSessionStorage,
+		UserStorage:    deps.SessionUserStorage,
+	})
+	if err != nil {
+		log.Fatalf("unable to initialize session service due: %v", err)
+	}
+
 	// initialize rest api
 	api, err := rest.NewAPI(rest.APIConfig{
 		PlayingService: playService,
 		BattleService:  battleService,
+		EventService:   eventService,
+		SessionService: sessionService,
 	})
 	if err != nil {
 		log.Fatalf("unable to initialize rest api due: %v", err)

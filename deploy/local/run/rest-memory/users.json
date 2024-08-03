@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "username": "marion",
+    "email": "marion@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 2,
+    "username": "todd",
+    "email": "todd@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 3,
+    "username": "anthony",
+    "email": "anthony@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 4,
+    "username": "kevin",
+    "email": "kevin@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 5,
+    "username": "eric",
+    "email": "eric@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 6,
+    "username": "elnora",
+    "email": "elnora@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 7,
+    "username": "etta",
+    "email": "etta@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 8,
+    "username": "caleb",
+    "email": "caleb@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 9,
+    "username": "larry",
+    "email": "larry@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 10,
+    "username": "stanley",
+    "email": "stanley@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 11,
+    "username": "nelle",
+    "email": "nelle@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 12,
+    "username": "luke",
+    "email": "luke@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 13,
+    "username": "ian",
+    "email": "ian@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 14,
+    "username": "harry",
+    "email": "harry@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 15,
+    "username": "paul",
+    "email": "paul@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 16,
+    "username": "todd",
+    "email": "todd@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 17,
+    "username": "lula",
+    "email": "lula@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 18,
+    "username": "warren",
+    "email": "warren@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 19,
+    "username": "marguerite",
+    "email": "marguerite@eveners.com",
+    "password": "123456"
+  },
+  {
+    "id": 20,
+    "username": "mitchell",
+    "email": "mitchell@eveners.com",
+    "password": "123456"
+  }
+]

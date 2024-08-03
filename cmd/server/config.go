@@ -13,7 +13,9 @@ type storageConfig struct {
 }
 
 type storageMemoryConfig struct {
-	MonsterDataPath string `cfg:"monster_data_path"`
+	MonsterDataPath string `cfg:"monster_data_path" cfgDefault:"../../deploy/local/run/rest-memory/data.json"`
+	EventDataPath   string `cfg:"event_data_path" cfgDefault:"../../deploy/local/run/rest-memory/events.json"`
+	UserDataPath    string `cfg:"user_data_path" cfgDefault:"../../deploy/local/run/rest-memory/users.json"`
 }
 
 type storageDynamoDBConfig struct {
