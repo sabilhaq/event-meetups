@@ -6,7 +6,7 @@ type config struct {
 }
 
 type storageConfig struct {
-	Type     storageType           `cfg:"type" cfgDefault:"memory"`
+	Type     storageType           `cfg:"type" cfgDefault:"mysql"`
 	Memory   storageMemoryConfig   `cfg:"memory"`
 	DynamoDB storageDynamoDBConfig `cfg:"dynamodb"`
 	MySQL    storageMySQLConfig    `cfg:"mysql"`
@@ -26,7 +26,7 @@ type storageDynamoDBConfig struct {
 }
 
 type storageMySQLConfig struct {
-	SQLDSN string `cfg:"sql_dsn"`
+	SQLDSN string `cfg:"sql_dsn" cfgDefault:"root:password@tcp(localhost:3306)/db_eventmeetup?timeout=5s"`
 }
 
 type storageType string
