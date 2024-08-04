@@ -53,3 +53,25 @@ func ToMonsterRow(monster *entity.Monster) *MonsterRow {
 		AvatarURL: monster.AvatarURL,
 	}
 }
+
+type EventRow struct {
+	ID   int    `db:"id"`
+	Name string `db:"name"`
+}
+
+func (r *EventRow) ToEvent() *entity.Event {
+	return &entity.Event{
+		ID:   r.ID,
+		Name: r.Name,
+	}
+}
+
+type EventRows []EventRow
+
+func (r EventRows) ToEvents() []entity.Event {
+	var monsters []entity.Event
+	for _, row := range r {
+		monsters = append(monsters, *row.ToEvent())
+	}
+	return monsters
+}
