@@ -12,7 +12,7 @@ type SessionStorage interface {
 }
 
 type UserStorage interface {
-	// GetUser returns game instance for given username and password from storage. Returns nil
-	// when given username and password is not found in database.
-	GetUser(ctx context.Context, username, password string) (*entity.User, error)
+	// GetUser returns game instance for given username from storage. Returns nil
+	// when given username is not found in database.
+	GetUser(ctx context.Context, username string) (*entity.User, error)
 }

@@ -29,11 +29,11 @@ type service struct {
 
 func (s *service) CreateSession(ctx context.Context, username, password string) (*entity.Session, error) {
 	// get user
-	user, err := s.userStorage.GetUser(ctx, username, password)
+	user, err := s.userStorage.GetUser(ctx, username)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch user instance due: %w", err)
 	}
-	if user == nil {
+	if user == nil || user.Password != password {
 		return nil, ErrInvalidCreds
 	}
 
