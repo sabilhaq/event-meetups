@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	secretKey = []byte("event-maker")
+	jwtKey = []byte("event-maker")
 )
 
 type Storage struct{}
@@ -23,7 +23,7 @@ func (s *Storage) GenerateToken(ctx context.Context, userID int) (string, error)
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(secretKey)
+	return token.SignedString(jwtKey)
 }
 
 type Config struct{}
