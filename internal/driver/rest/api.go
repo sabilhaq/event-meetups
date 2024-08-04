@@ -73,7 +73,13 @@ func (a *API) GetHandler() http.Handler {
 	r.Get("/health", a.serveHealthCheck)
 	r.Get("/partners", a.serveGetAvailablePartners)
 	r.Post("/session", a.serveCreateSession)
-	r.Get("/events", a.serveGetEvents)
+
+	r.Group(func(r chi.Router) {
+		r.Use(AuthMiddleware)
+
+		r.Get("/events", a.serveGetEvents)
+	})
+
 	r.Route("/games", func(r chi.Router) {
 		r.Post("/", a.serveNewGame)
 		r.Route("/{game_id}", func(r chi.Router) {
