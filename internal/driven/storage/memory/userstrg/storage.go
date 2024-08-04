@@ -14,23 +14,14 @@ type Storage struct {
 }
 
 // GetUser implements session.UserStorage.
-func (s *Storage) GetUser(ctx context.Context, username string, password string) (*entity.User, error) {
+func (s *Storage) GetUser(ctx context.Context, username string) (*entity.User, error) {
 	for _, user := range s.data {
-		if user.Username == username && user.Password == password {
+		if user.Username == username {
 			return &user, nil
 		}
 	}
 
 	return nil, nil
-}
-
-// GetUsers implements user.UserStorage.
-func (s *Storage) GetUsers(ctx context.Context) ([]entity.User, error) {
-	var users []entity.User
-	for _, user := range s.data {
-		users = append(users, user)
-	}
-	return users, nil
 }
 
 type Config struct {
