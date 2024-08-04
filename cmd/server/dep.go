@@ -13,7 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/jmoiron/sqlx"
 
-	memsessionstrg "github.com/Haraj-backend/hex-monscape/internal/driven/rest/token"
+	sessionstrg "github.com/Haraj-backend/hex-monscape/internal/driven/rest/token"
+
 	membattlestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/battlestrg"
 	memeventstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/eventstrg"
 	memgamestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/gamestrg"
@@ -25,8 +26,10 @@ import (
 	ddbmonstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/dynamodb/monstrg"
 
 	sqlbattlestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/battlestrg"
+	sqleventstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/eventstrg"
 	sqlgamestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/gamestrg"
 	sqlmonstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/monstrg"
+	sqluserstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/userstrg"
 )
 
 type storageDeps struct {
@@ -73,7 +76,7 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		}
 
 		// initialize session storage
-		sessionStorage, err := memsessionstrg.New(memsessionstrg.Config{})
+		sessionStorage, err := sessionstrg.New(sessionstrg.Config{})
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize session storage due: %v", err)
 		}
@@ -162,6 +165,21 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize battle storage due: %v", err)
 		}
+		// initialize event storage
+		eventStorage, err := sqleventstrg.New(sqleventstrg.Config{SQLClient: sqlClient})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize event storage due: %v", err)
+		}
+		// initialize user storage
+		userStorage, err := sqluserstrg.New(sqluserstrg.Config{SQLClient: sqlClient})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize user storage due: %v", err)
+		}
+		// initialize session storage
+		sessionStorage, err := sessionstrg.New(sessionstrg.Config{})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize session storage due: %v", err)
+		}
 
 		// set storages
 		deps.BattleGameStorage = gameStorage
@@ -169,6 +187,9 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.BattleMonsterStorage = monsterStorage
 		deps.PlayGameStorage = gameStorage
 		deps.PlayPartnerStorage = monsterStorage
+		deps.EventEventStorage = eventStorage
+		deps.SessionSessionStorage = sessionStorage
+		deps.SessionUserStorage = userStorage
 
 	default:
 		return nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Type)
