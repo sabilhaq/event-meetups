@@ -9,5 +9,5 @@ import (
 type VenueStorage interface {
 	// GetVenues returns list of venue available in the system.
 	// Returns nil when there is no venues available.
-	GetVenues(ctx context.Context) ([]entity.Venue, error)
+	GetVenues(ctx context.Context, filter entity.GetVenueFilter) ([]entity.Venue, error)
 }

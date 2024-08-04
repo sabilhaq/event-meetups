@@ -13,6 +13,7 @@ import (
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/venue"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -50,14 +51,6 @@ func main() {
 		log.Fatalf("unable to initialize battle service due: %v", err)
 	}
 
-	// initialize event service
-	eventService, err := event.NewService(event.ServiceConfig{
-		EventStorage: deps.EventEventStorage,
-	})
-	if err != nil {
-		log.Fatalf("unable to initialize event service due: %v", err)
-	}
-
 	// initialize session service
 	sessionService, err := session.NewService(session.ServiceConfig{
 		SessionStorage: deps.SessionSessionStorage,
@@ -67,12 +60,29 @@ func main() {
 		log.Fatalf("unable to initialize session service due: %v", err)
 	}
 
+	// initialize event service
+	eventService, err := event.NewService(event.ServiceConfig{
+		EventStorage: deps.EventEventStorage,
+	})
+	if err != nil {
+		log.Fatalf("unable to initialize event service due: %v", err)
+	}
+
+	// initialize venue service
+	venueService, err := venue.NewService(venue.ServiceConfig{
+		VenueStorage: deps.VenueVenueStorage,
+	})
+	if err != nil {
+		log.Fatalf("unable to initialize venue service due: %v", err)
+	}
+
 	// initialize rest api
 	api, err := rest.NewAPI(rest.APIConfig{
 		PlayingService: playService,
 		BattleService:  battleService,
-		EventService:   eventService,
 		SessionService: sessionService,
+		EventService:   eventService,
+		VenueService:   venueService,
 	})
 	if err != nil {
 		log.Fatalf("unable to initialize rest api due: %v", err)

@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,17 +17,20 @@ import (
 	"github.com/go-chi/render"
 	"gopkg.in/validator.v2"
 
+	"github.com/Haraj-backend/hex-monscape/internal/core/entity"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/battle"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/venue"
 )
 
 type APIConfig struct {
 	PlayingService play.Service    `validate:"nonnil"`
 	BattleService  battle.Service  `validate:"nonnil"`
-	EventService   event.Service   `validate:"nonnil"`
 	SessionService session.Service `validate:"nonnil"`
+	EventService   event.Service   `validate:"nonnil"`
+	VenueService   venue.Service   `validate:"nonnil"`
 	IsWebEnabled   bool
 }
 
@@ -41,8 +46,9 @@ func NewAPI(cfg APIConfig) (*API, error) {
 	a := &API{
 		playService:    cfg.PlayingService,
 		battleService:  cfg.BattleService,
-		eventService:   cfg.EventService,
 		sessionService: cfg.SessionService,
+		eventService:   cfg.EventService,
+		venueService:   cfg.VenueService,
 		isWebEnabled:   cfg.IsWebEnabled,
 	}
 	return a, nil
@@ -51,8 +57,9 @@ func NewAPI(cfg APIConfig) (*API, error) {
 type API struct {
 	playService    play.Service
 	battleService  battle.Service
-	eventService   event.Service
 	sessionService session.Service
+	eventService   event.Service
+	venueService   venue.Service
 	isWebEnabled   bool
 }
 
@@ -78,6 +85,7 @@ func (a *API) GetHandler() http.Handler {
 		r.Use(AuthMiddleware)
 
 		r.Get("/events", a.serveGetEvents)
+		r.Get("/venues", a.serveGetVenues)
 	})
 
 	r.Route("/games", func(r chi.Router) {
@@ -143,6 +151,47 @@ func (a *API) serveGetEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.Render(w, r, NewSuccessResp(events))
+}
+
+func (a *API) serveGetVenues(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	filter := entity.GetVenueFilter{}
+
+	eventIDStr := r.URL.Query().Get("event_id")
+	if eventIDStr != "" {
+		eventID, err := strconv.Atoi(eventIDStr)
+		if err != nil {
+			render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		}
+		filter.EventID = &eventID
+	}
+
+	meetupStartTSStr := r.URL.Query().Get("meetup_start_ts")
+	if meetupStartTSStr != "" {
+		meetupStartTS, err := strconv.ParseInt(meetupStartTSStr, 10, 64)
+		if err != nil {
+			render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		}
+		meetupStartTSHHMM := time.Unix(meetupStartTS, 0).Format("15:04")
+		filter.MeetupStartTS = &meetupStartTSHHMM
+	}
+
+	meetupEndTSStr := r.URL.Query().Get("meetup_end_ts")
+	if meetupEndTSStr != "" {
+		meetupEndTS, err := strconv.ParseInt(meetupEndTSStr, 10, 64)
+		if err != nil {
+			render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		}
+		meetupEndTSHHMM := time.Unix(meetupEndTS, 0).Format("15:04")
+		filter.MeetupEndTS = &meetupEndTSHHMM
+	}
+
+	venues, err := a.venueService.GetVenues(ctx, filter)
+	if err != nil {
+		render.Render(w, r, NewErrorResp(err))
+		return
+	}
+	render.Render(w, r, NewSuccessResp(venues))
 }
 
 func (a *API) serveCreateSession(w http.ResponseWriter, r *http.Request) {

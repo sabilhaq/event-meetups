@@ -1,6 +1,9 @@
 package shared
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/Haraj-backend/hex-monscape/internal/core/entity"
 )
 
@@ -74,4 +77,83 @@ func (r EventRows) ToEvents() []entity.Event {
 		monsters = append(monsters, *row.ToEvent())
 	}
 	return monsters
+}
+
+type SupportedEvent struct {
+	ID              int    `db:"id"`
+	Name            string `db:"name"`
+	MeetupsCapacity int    `db:"meetups_capacity"`
+}
+
+type VenueEventRows []VenueEventRow
+
+type VenueEventRow struct {
+	VenueID         int    `db:"venue_id"`
+	VenueName       string `db:"venue_name"`
+	VenueOpenDays   string `db:"venue_open_days"`
+	VenueOpenAt     string `db:"venue_open_at"`
+	VenueClosedAt   string `db:"venue_closed_at"`
+	VenueTimezone   string `db:"venue_timezone"`
+	EventID         int    `db:"event_id"`
+	EventName       string `db:"event_name"`
+	MeetupsCapacity int    `db:"meetups_capacity"`
+}
+
+// Helper function to add event to existing venue
+func (r *VenueEventRow) ToSupportedEvent() *entity.SupportedEvent {
+	return &entity.SupportedEvent{
+		ID:              r.EventID,
+		Name:            r.EventName,
+		MeetupsCapacity: r.MeetupsCapacity,
+	}
+}
+
+func (r *VenueEventRow) ToVenue() *entity.Venue {
+	var openDaysArr []int
+	for _, day := range strings.Split(r.VenueOpenDays, ",") {
+		dayInt, _ := strconv.Atoi(day)
+		openDaysArr = append(openDaysArr, dayInt)
+	}
+
+	return &entity.Venue{
+		ID:       r.VenueID,
+		Name:     r.VenueName,
+		OpenDays: openDaysArr,
+		OpenAt:   r.VenueOpenAt,
+		ClosedAt: r.VenueClosedAt,
+		Timezone: r.VenueTimezone,
+		SupportedEvents: []entity.SupportedEvent{
+			{
+				ID:              r.EventID,
+				Name:            r.EventName,
+				MeetupsCapacity: r.MeetupsCapacity,
+			},
+		},
+	}
+}
+
+func (r VenueEventRows) ToVenues() []entity.Venue {
+	// Map to hold venues and their events
+	venuesMap := make(map[int]*entity.Venue)
+
+	for _, row := range r {
+		// Check if the venue already exists in the map
+		if venue, exists := venuesMap[row.VenueID]; exists {
+			// Append the event to the existing venue's supported events
+			venue.SupportedEvents = append(venue.SupportedEvents, entity.SupportedEvent{
+				ID:              row.EventID,
+				Name:            row.EventName,
+				MeetupsCapacity: row.MeetupsCapacity,
+			})
+		} else {
+			// Create a new venue entry
+			venuesMap[row.VenueID] = row.ToVenue()
+		}
+	}
+
+	var venues []entity.Venue
+	for _, venue := range venuesMap {
+		venues = append(venues, *venue)
+	}
+	return venues
 }

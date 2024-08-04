@@ -55,3 +55,21 @@ CREATE TABLE IF NOT EXISTS event (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL
 );
+
+CREATE TABLE venue (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  open_days VARCHAR(15) NOT NULL,  -- To store the days of the week as a comma-separated list
+  open_at VARCHAR(5) NOT NULL,
+  closed_at VARCHAR(5) NOT NULL,
+  timezone VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE venue_event (
+  venue_id INT NOT NULL,
+  event_id INT NOT NULL,
+  meetups_capacity INT NOT NULL,
+  PRIMARY KEY (venue_id, event_id),
+  FOREIGN KEY (venue_id) REFERENCES venue(id),
+  FOREIGN KEY (event_id) REFERENCES event(id)
+);

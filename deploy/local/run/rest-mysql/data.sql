@@ -33,3 +33,27 @@ INSERT INTO event (name) VALUES
   ('Bazaar'),
   ('Workshop'),
   ('Conference');
+
+INSERT INTO venue (name, open_days, open_at, closed_at, timezone)
+VALUES
+  ('Si Jalak Harupat', '0,1,2,3,4,5,6', '08:00', '23:59', 'Asia/Jakarta'),
+  ('Parahyangan Convention', '0,1,3,4,5,6', '00:00', '23:59', 'Asia/Jakarta'),
+  ('Ice BSD', '0,1,2,3,4,5,6', '05:00', '23:59', 'Asia/Jakarta');
+
+INSERT INTO venue_event (venue_id, event_id, meetups_capacity)
+VALUES
+  -- For Si Jalak Harupat (ID: 1)
+  (1, 2, 1),  -- Exhibition
+  (1, 3, 1),  -- Bazaar
+  (1, 4, 1),  -- Workshop
+
+  -- For Parahyangan Convention (ID: 2)
+  (2, 1, 1),  -- Wedding
+  (2, 2, 1),  -- Exhibition
+
+  -- For Ice BSD (ID: 3)
+  (3, 1, 1),  -- Wedding
+  (3, 2, 2),  -- Exhibition
+  (3, 3, 2),  -- Bazaar
+  (3, 4, 3),  -- Workshop
+  (3, 5, 2);  -- Conference

@@ -1,4 +1,4 @@
-package userstrg
+package eventstrg
 
 import (
 	"context"

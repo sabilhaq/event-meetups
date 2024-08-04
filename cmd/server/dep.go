@@ -8,6 +8,7 @@ import (
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/venue"
 	"github.com/aws/aws-sdk-go/aws"
 	awsSession "github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
@@ -20,6 +21,7 @@ import (
 	memgamestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/gamestrg"
 	memmonstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/monstrg"
 	memuserstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/userstrg"
+	memvenuestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/venuestrg"
 
 	ddbbattlestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/dynamodb/battlestrg"
 	ddbgamestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/dynamodb/gamestrg"
@@ -30,6 +32,7 @@ import (
 	sqlgamestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/gamestrg"
 	sqlmonstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/monstrg"
 	sqluserstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/userstrg"
+	sqlvenuestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/venuestrg"
 )
 
 type storageDeps struct {
@@ -38,9 +41,10 @@ type storageDeps struct {
 	BattleMonsterStorage  battle.MonsterStorage
 	PlayGameStorage       play.GameStorage
 	PlayPartnerStorage    play.PartnerStorage
-	EventEventStorage     event.EventStorage
 	SessionSessionStorage session.SessionStorage
 	SessionUserStorage    session.UserStorage
+	EventEventStorage     event.EventStorage
+	VenueVenueStorage     venue.VenueStorage
 }
 
 func initStorageDeps(cfg config) (*storageDeps, error) {
@@ -64,32 +68,40 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		// initialize battle storage
 		battleStorage := membattlestrg.New()
 
-		eventData, err := os.ReadFile(cfg.Storage.Memory.EventDataPath)
-		if err != nil {
-			return nil, fmt.Errorf("unable to read event data due: %v", err)
-		}
-
-		// initialize event storage
-		eventStorage, err := memeventstrg.New(memeventstrg.Config{EventData: eventData})
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize event storage due: %v", err)
-		}
-
 		// initialize session storage
 		sessionStorage, err := sessionstrg.New(sessionstrg.Config{})
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize session storage due: %v", err)
 		}
 
+		// initialize user storage
 		userData, err := os.ReadFile(cfg.Storage.Memory.UserDataPath)
 		if err != nil {
 			return nil, fmt.Errorf("unable to read user data due: %v", err)
 		}
-
-		// initialize user storage
 		userStorage, err := memuserstrg.New(memuserstrg.Config{UserData: userData})
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize user storage due: %v", err)
+		}
+
+		// initialize event storage
+		eventData, err := os.ReadFile(cfg.Storage.Memory.EventDataPath)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read event data due: %v", err)
+		}
+		eventStorage, err := memeventstrg.New(memeventstrg.Config{EventData: eventData})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize event storage due: %v", err)
+		}
+
+		// initialize venue storage
+		venueData, err := os.ReadFile(cfg.Storage.Memory.VenueDataPath)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read venue data due: %v", err)
+		}
+		venueStorage, err := memvenuestrg.New(memvenuestrg.Config{VenueData: venueData})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize venue storage due: %v", err)
 		}
 
 		// set storages
@@ -99,9 +111,10 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.PlayGameStorage = gameStorage
 		deps.PlayPartnerStorage = monsterStorage
 
-		deps.EventEventStorage = eventStorage
 		deps.SessionSessionStorage = sessionStorage
 		deps.SessionUserStorage = userStorage
+		deps.EventEventStorage = eventStorage
+		deps.VenueVenueStorage = venueStorage
 
 	case storageTypeDynamoDB:
 		// initialize aws awsSession
@@ -165,11 +178,6 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize battle storage due: %v", err)
 		}
-		// initialize event storage
-		eventStorage, err := sqleventstrg.New(sqleventstrg.Config{SQLClient: sqlClient})
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize event storage due: %v", err)
-		}
 		// initialize user storage
 		userStorage, err := sqluserstrg.New(sqluserstrg.Config{SQLClient: sqlClient})
 		if err != nil {
@@ -180,6 +188,16 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize session storage due: %v", err)
 		}
+		// initialize event storage
+		eventStorage, err := sqleventstrg.New(sqleventstrg.Config{SQLClient: sqlClient})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize event storage due: %v", err)
+		}
+		// initialize venue storage
+		venueStorage, err := sqlvenuestrg.New(sqlvenuestrg.Config{SQLClient: sqlClient})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize venue storage due: %v", err)
+		}
 
 		// set storages
 		deps.BattleGameStorage = gameStorage
@@ -187,9 +205,10 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.BattleMonsterStorage = monsterStorage
 		deps.PlayGameStorage = gameStorage
 		deps.PlayPartnerStorage = monsterStorage
-		deps.EventEventStorage = eventStorage
 		deps.SessionSessionStorage = sessionStorage
 		deps.SessionUserStorage = userStorage
+		deps.EventEventStorage = eventStorage
+		deps.VenueVenueStorage = venueStorage
 
 	default:
 		return nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Type)

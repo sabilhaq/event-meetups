@@ -15,15 +15,15 @@ var (
 
 type Service interface {
 	// GetVenues returns all venues available in the system.
-	GetVenues(ctx context.Context) ([]entity.Venue, error)
+	GetVenues(ctx context.Context, filter entity.GetVenueFilter) ([]entity.Venue, error)
 }
 
 type service struct {
 	venueStorage VenueStorage
 }
 
-func (s *service) GetVenues(ctx context.Context) ([]entity.Venue, error) {
-	venues, err := s.venueStorage.GetVenues(ctx)
+func (s *service) GetVenues(ctx context.Context, filter entity.GetVenueFilter) ([]entity.Venue, error) {
+	venues, err := s.venueStorage.GetVenues(ctx, filter)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get available venues due: %w", err)
 	}

@@ -1,4 +1,4 @@
-package userstrg
+package eventstrg
 
 import "github.com/Haraj-backend/hex-monscape/internal/core/entity"
 

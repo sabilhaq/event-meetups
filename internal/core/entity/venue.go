@@ -1,17 +1,23 @@
 package entity
 
 type Venue struct {
-	ID              string
+	ID              int
 	Name            string
 	OpenDays        []int
 	OpenAt          string
 	ClosedAt        string
-	TimeZone        string
+	Timezone        string
 	SupportedEvents []SupportedEvent
 }
 
 type SupportedEvent struct {
-	ID            string
-	Name          string
-	EventCapacity int
+	ID              int
+	Name            string
+	MeetupsCapacity int
+}
+
+type GetVenueFilter struct {
+	EventID       *int
+	MeetupStartTS *string
+	MeetupEndTS   *string
 }
