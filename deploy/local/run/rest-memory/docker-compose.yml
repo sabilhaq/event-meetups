@@ -14,6 +14,7 @@ services:
       - ../../../../.output/go/pkg:/go/pkg
       - ./data.json:/data/data.json
       - ./events.json:/data/events.json
+      - ./users.json:/data/users.json
     ports:
       - 9186:9186
     environment:
