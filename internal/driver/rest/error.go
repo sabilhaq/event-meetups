@@ -40,6 +40,30 @@ func NewBadRequestError(msg string) *Error {
 	}
 }
 
+func NewUnauthorizedError() *Error {
+	return &Error{
+		StatusCode: http.StatusUnauthorized,
+		Err:        "ERR_INVALID_ACCESS_TOKEN",
+		Message:    "invalid access token",
+	}
+}
+
+func NewForbiddenError() *Error {
+	return &Error{
+		StatusCode: http.StatusForbidden,
+		Err:        "ERR_FORBIDDEN_ACCESS",
+		Message:    "user doesn't have enough authorization",
+	}
+}
+
+func NewNotFoundError() *Error {
+	return &Error{
+		StatusCode: http.StatusNotFound,
+		Err:        "ERR_NOT_FOUND",
+		Message:    "resource is not found",
+	}
+}
+
 func NewPartnerNotFoundError() *Error {
 	return &Error{
 		StatusCode: http.StatusNotFound,
