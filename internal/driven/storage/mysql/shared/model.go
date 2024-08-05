@@ -79,10 +79,29 @@ func (r EventRows) ToEvents() []entity.Event {
 	return monsters
 }
 
-type SupportedEvent struct {
+type SupportedEventRows []SupportedEventRow
+
+type SupportedEventRow struct {
 	ID              int    `db:"id"`
 	Name            string `db:"name"`
 	MeetupsCapacity int    `db:"meetups_capacity"`
+}
+
+func (r SupportedEventRows) ToSupportedEvents() []entity.SupportedEvent {
+	var supportedEvents []entity.SupportedEvent
+	for _, row := range r {
+		supportedEvents = append(supportedEvents, *row.ToSupportedEvent())
+	}
+	return supportedEvents
+}
+
+// Helper function to add event to existing venue
+func (r *SupportedEventRow) ToSupportedEvent() *entity.SupportedEvent {
+	return &entity.SupportedEvent{
+		ID:              r.ID,
+		Name:            r.Name,
+		MeetupsCapacity: r.MeetupsCapacity,
+	}
 }
 
 type VenueEventRows []VenueEventRow
@@ -97,15 +116,6 @@ type VenueEventRow struct {
 	EventID         int    `db:"event_id"`
 	EventName       string `db:"event_name"`
 	MeetupsCapacity int    `db:"meetups_capacity"`
-}
-
-// Helper function to add event to existing venue
-func (r *VenueEventRow) ToSupportedEvent() *entity.SupportedEvent {
-	return &entity.SupportedEvent{
-		ID:              r.EventID,
-		Name:            r.EventName,
-		MeetupsCapacity: r.MeetupsCapacity,
-	}
 }
 
 func (r *VenueEventRow) ToVenue() *entity.Venue {

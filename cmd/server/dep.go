@@ -45,6 +45,7 @@ type storageDeps struct {
 	SessionUserStorage    session.UserStorage
 	EventEventStorage     event.EventStorage
 	VenueVenueStorage     venue.VenueStorage
+	VenueEventStorage     venue.EventStorage
 }
 
 func initStorageDeps(cfg config) (*storageDeps, error) {
@@ -115,6 +116,7 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.SessionUserStorage = userStorage
 		deps.EventEventStorage = eventStorage
 		deps.VenueVenueStorage = venueStorage
+		deps.VenueEventStorage = eventStorage
 
 	case storageTypeDynamoDB:
 		// initialize aws awsSession
@@ -209,6 +211,7 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.SessionUserStorage = userStorage
 		deps.EventEventStorage = eventStorage
 		deps.VenueVenueStorage = venueStorage
+		deps.VenueEventStorage = eventStorage
 
 	default:
 		return nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Type)

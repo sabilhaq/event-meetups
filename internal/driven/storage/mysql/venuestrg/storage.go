@@ -77,6 +77,8 @@ func (s *Storage) GetVenues(ctx context.Context, filter entity.GetVenueFilter) (
 		queryBuilder.WriteString(strings.Join(conditions, " AND "))
 	}
 
+	queryBuilder.WriteString(" ORDER BY v.id ASC")
+
 	// Finalize the query
 	query := queryBuilder.String()
 

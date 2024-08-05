@@ -22,6 +22,10 @@ func (s *Storage) GetEvents(ctx context.Context) ([]entity.Event, error) {
 	return events, nil
 }
 
+func (s *Storage) GetSupportedEvents(ctx context.Context, venueID int) ([]entity.SupportedEvent, error) {
+	panic("not implemented")
+}
+
 type Config struct {
 	EventData []byte `validate:"nonzero"`
 }

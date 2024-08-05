@@ -71,6 +71,7 @@ func main() {
 	// initialize venue service
 	venueService, err := venue.NewService(venue.ServiceConfig{
 		VenueStorage: deps.VenueVenueStorage,
+		EventStorage: deps.VenueEventStorage,
 	})
 	if err != nil {
 		log.Fatalf("unable to initialize venue service due: %v", err)

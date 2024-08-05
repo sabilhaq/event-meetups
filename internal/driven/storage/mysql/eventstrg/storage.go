@@ -72,3 +72,25 @@ func (s *Storage) GetEvent(ctx context.Context, eventID int) (*entity.Event, err
 
 	return event.ToEvent(), nil
 }
+
+func (s *Storage) GetSupportedEvents(ctx context.Context, venueID int) ([]entity.SupportedEvent, error) {
+	var rows shared.SupportedEventRows
+	query := `
+		SELECT
+			e.id AS id,
+			e.name AS name,
+			ve.meetups_capacity AS meetups_capacity
+		FROM venue_event ve
+		LEFT JOIN event e ON ve.event_id = e.id
+		WHERE ve.venue_id = ?
+	`
+
+	if err := s.sqlClient.SelectContext(ctx, &rows, query, venueID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("unable to execute query due: %w", err)
+	}
+
+	return rows.ToSupportedEvents(), nil
+}
