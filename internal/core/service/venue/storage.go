@@ -11,3 +11,9 @@ type VenueStorage interface {
 	// Returns nil when there is no venues available.
 	GetVenues(ctx context.Context, filter entity.GetVenueFilter) ([]entity.Venue, error)
 }
+
+type EventStorage interface {
+	// GetEvents returns list of event that supported by the venue.
+	// Returns nil when there is no events available.
+	GetSupportedEvents(ctx context.Context, venueID int) ([]entity.SupportedEvent, error)
+}

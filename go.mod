@@ -10,6 +10,7 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/go-chi/render v1.0.1
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.3.0
 	github.com/gosidekick/goconfig v1.3.0
 	github.com/jmoiron/sqlx v1.3.4
@@ -21,7 +22,6 @@ require (
 	github.com/aws/aws-lambda-go v1.17.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

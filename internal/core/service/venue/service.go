@@ -20,6 +20,7 @@ type Service interface {
 
 type service struct {
 	venueStorage VenueStorage
+	eventStorage EventStorage
 }
 
 func (s *service) GetVenues(ctx context.Context, filter entity.GetVenueFilter) ([]entity.Venue, error) {
@@ -27,11 +28,29 @@ func (s *service) GetVenues(ctx context.Context, filter entity.GetVenueFilter) (
 	if err != nil {
 		return nil, fmt.Errorf("unable to get available venues due: %w", err)
 	}
-	return venues, nil
+	res := make([]entity.Venue, len(venues))
+	for i := 0; i < len(venues); i++ {
+		supportedEvents, err := s.eventStorage.GetSupportedEvents(ctx, venues[i].ID)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get supported events due: %w", err)
+		}
+
+		res[i] = entity.Venue{
+			ID:              venues[i].ID,
+			Name:            venues[i].Name,
+			OpenDays:        venues[i].OpenDays,
+			OpenAt:          venues[i].OpenAt,
+			ClosedAt:        venues[i].ClosedAt,
+			Timezone:        venues[i].Timezone,
+			SupportedEvents: supportedEvents,
+		}
+	}
+	return res, nil
 }
 
 type ServiceConfig struct {
 	VenueStorage VenueStorage `validate:"nonnil"`
+	EventStorage EventStorage `validate:"nonnil"`
 }
 
 func (c ServiceConfig) Validate() error {
@@ -46,6 +65,7 @@ func NewService(cfg ServiceConfig) (Service, error) {
 	}
 	s := &service{
 		venueStorage: cfg.VenueStorage,
+		eventStorage: cfg.EventStorage,
 	}
 	return s, nil
 }
