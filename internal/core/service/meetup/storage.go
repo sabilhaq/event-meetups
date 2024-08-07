@@ -21,3 +21,9 @@ type MeetupStorage interface {
 	// CancelMeetup is used to update meetup status to cancelled in storage.
 	CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) error
 }
+
+type VenueStorage interface {
+	// IsEventSupported returns true if event supported by the venue.
+	// Returns false otherwise.
+	IsEventSupported(ctx context.Context, venueID, eventID int) (bool, error)
+}

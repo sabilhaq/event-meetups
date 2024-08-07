@@ -125,3 +125,8 @@ func (s *Storage) GetVenue(ctx context.Context, venueID int) (*entity.Venue, err
 
 	return &venues.ToVenues()[0], nil
 }
+
+// IsEventSupported implements meetup.VenueStorage.
+func (s *Storage) IsEventSupported(ctx context.Context, venueID int, eventID int) (bool, error) {
+	panic("unimplemented")
+}

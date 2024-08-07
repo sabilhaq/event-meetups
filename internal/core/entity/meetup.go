@@ -8,8 +8,8 @@ type MeetupConfig struct {
 	Name       string `validate:"nonzero"`
 	VenueID    int    `validate:"nonzero"`
 	EventID    int    `validate:"nonzero"`
-	StartTs    int    `validate:"nonzero"`
-	EndTs      int    `validate:"nonzero"`
+	StartTs    int64  `validate:"nonzero"`
+	EndTs      int64  `validate:"nonzero"`
 	MaxPersons int    `validate:"nonzero"`
 }
 
@@ -21,8 +21,8 @@ type CreateMeetupRequest struct {
 	Name       string
 	VenueID    int
 	EventID    int
-	StartTs    int
-	EndTs      int
+	StartTs    int64
+	EndTs      int64
 	MaxPersons int
 }
 
@@ -31,14 +31,18 @@ type Meetup struct {
 	Name               string
 	Venue              MeetupVenue
 	Event              MeetupEvent
-	StartTs            int
-	EndTs              int
+	StartTs            int64
+	EndTs              int64
 	MaxPersons         int
 	Organizer          MeetupOrganizer
 	JoinedPersons      []JoinedPerson
 	JoinedPersonsCount int
 	IsJoined           bool
 	Status             string
+	CancelledReason    string
+	CancelledAt        *int64
+	CreatedAt          int64
+	UpdatedAt          *int64
 }
 
 type MeetupVenue struct {
@@ -90,8 +94,8 @@ type CancelMeetupResponse struct {
 	Name            string
 	Venue           MeetupVenue
 	Event           MeetupEvent
-	StartTs         int
-	EndTs           int
+	StartTs         int64
+	EndTs           int64
 	MaxPersons      int
 	Organizer       MeetupOrganizer
 	Status          string

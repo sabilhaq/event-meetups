@@ -20,6 +20,7 @@ import (
 	"github.com/Haraj-backend/hex-monscape/internal/core/entity"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/battle"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/meetup"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/venue"
@@ -31,6 +32,7 @@ type APIConfig struct {
 	SessionService session.Service `validate:"nonnil"`
 	EventService   event.Service   `validate:"nonnil"`
 	VenueService   venue.Service   `validate:"nonnil"`
+	MeetupService  meetup.Service  `validate:"nonnil"`
 	IsWebEnabled   bool
 }
 
@@ -49,6 +51,7 @@ func NewAPI(cfg APIConfig) (*API, error) {
 		sessionService: cfg.SessionService,
 		eventService:   cfg.EventService,
 		venueService:   cfg.VenueService,
+		meetupService:  cfg.MeetupService,
 		isWebEnabled:   cfg.IsWebEnabled,
 	}
 	return a, nil
@@ -60,6 +63,7 @@ type API struct {
 	sessionService session.Service
 	eventService   event.Service
 	venueService   venue.Service
+	meetupService  meetup.Service
 	isWebEnabled   bool
 }
 
@@ -88,6 +92,22 @@ func (a *API) GetHandler() http.Handler {
 		r.Route("/venues", func(r chi.Router) {
 			r.Get("/", a.serveGetVenues)
 			r.Get("/{venue_id}", a.serveGetVenue)
+		})
+	})
+
+	r.Route("/meetups", func(r chi.Router) {
+		r.Post("/", a.serveCreateMeetup)
+		// r.Get("/", a.serveGetMeetups)
+		r.Route("/{meetup_id}", func(r chi.Router) {
+			r.Get("/", a.serveGetGameDetails)
+			r.Get("/scenario", a.serveGetScenario)
+			r.Route("/battle", func(r chi.Router) {
+				r.Put("/", a.serveStartBattle)
+				r.Get("/", a.serveGetBattleInfo)
+				r.Put("/turn", a.serveDecideTurn)
+				r.Put("/attack", a.serveAttack)
+				r.Put("/surrender", a.serveSurrender)
+			})
 		})
 	})
 
@@ -345,6 +365,35 @@ func (a *API) serveSurrender(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.Render(w, r, NewSuccessResp(bt))
+}
+
+func (a *API) serveCreateMeetup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	var rb createMeetupReqBody
+	err := json.NewDecoder(r.Body).Decode(&rb)
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+	err = rb.Validate()
+	if err != nil {
+		render.Render(w, r, NewErrorResp(err))
+		return
+	}
+	meetup, err := a.meetupService.CreateMeetup(ctx, entity.CreateMeetupRequest{
+		Name:       rb.Name,
+		VenueID:    rb.VenueID,
+		EventID:    rb.EventID,
+		StartTs:    rb.StartTs,
+		EndTs:      rb.EndTs,
+		MaxPersons: rb.MaxPersons,
+	})
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(meetup))
 }
 
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {

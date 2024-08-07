@@ -53,10 +53,23 @@ type Service interface {
 
 type service struct {
 	meetupStorage MeetupStorage
+	venueStorage  VenueStorage
 }
 
 func (s *service) CreateMeetup(ctx context.Context, req entity.CreateMeetupRequest) (*entity.Meetup, error) {
-	// TODO: validation
+	// TODO: validation Invalid event
+	// isEventSupported, err := s.venueStorage.IsEventSupported(ctx, req.VenueID, req.EventID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("unable to check is event supported by the venue due: %w", err)
+	// }
+	// if !isEventSupported {
+	// 	return nil, fmt.Errorf("event is not supported by the venue")
+	// }
+
+	// TODO: validation Exceed venue capacity
+
+	// TODO: validation Not within venue operating hours
+
 	// initiate new meetup instance
 	cfg := ConvertRequestToConfig(req)
 	meetup, err := entity.NewMeetup(cfg)
@@ -168,6 +181,7 @@ func (s *service) GetIncomingMeetups(ctx context.Context) ([]entity.Meetup, erro
 
 type ServiceConfig struct {
 	MeetupStorage MeetupStorage `validate:"nonnil"`
+	VenueStorage  VenueStorage  `validate:"nonnil"`
 }
 
 func (c ServiceConfig) Validate() error {
@@ -182,6 +196,7 @@ func NewService(cfg ServiceConfig) (Service, error) {
 	}
 	s := &service{
 		meetupStorage: cfg.MeetupStorage,
+		venueStorage:  cfg.VenueStorage,
 	}
 	return s, nil
 }

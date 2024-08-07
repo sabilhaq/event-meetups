@@ -11,6 +11,7 @@ import (
 
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/battle"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/meetup"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/venue"
@@ -77,6 +78,15 @@ func main() {
 		log.Fatalf("unable to initialize venue service due: %v", err)
 	}
 
+	// initialize meetup service
+	meetupService, err := meetup.NewService(meetup.ServiceConfig{
+		MeetupStorage: deps.MeetupMeetupStorage,
+		VenueStorage:  deps.MeetupVenueStorage,
+	})
+	if err != nil {
+		log.Fatalf("unable to initialize meetup service due: %v", err)
+	}
+
 	// initialize rest api
 	api, err := rest.NewAPI(rest.APIConfig{
 		PlayingService: playService,
@@ -84,6 +94,7 @@ func main() {
 		SessionService: sessionService,
 		EventService:   eventService,
 		VenueService:   venueService,
+		MeetupService:  meetupService,
 	})
 	if err != nil {
 		log.Fatalf("unable to initialize rest api due: %v", err)
