@@ -93,16 +93,25 @@ func (s *Storage) GetVenues(ctx context.Context, filter entity.GetVenueFilter) (
 }
 
 func (s *Storage) GetVenue(ctx context.Context, venueID int) (*entity.Venue, error) {
-	var venue VenueRow
+	var venues shared.VenueEventRows
 	query := `
 		SELECT
-			id,
-			name
-		FROM venue
-		WHERE venueID = ?
+			v.id AS venue_id,
+			v.name AS venue_name,
+			v.open_days AS venue_open_days,
+			v.open_at AS venue_open_at,
+			v.closed_at AS venue_closed_at,
+			v.timezone AS venue_timezone,
+			e.id AS event_id,
+			e.name AS event_name,
+			ve.meetups_capacity AS meetups_capacity
+		FROM venue v
+		JOIN venue_event ve ON v.id = ve.venue_id
+		JOIN event e ON ve.event_id = e.id
+		WHERE v.id = ?
 	`
 
-	if err := s.sqlClient.GetContext(ctx, &venue, query, venueID); err != nil {
+	if err := s.sqlClient.SelectContext(ctx, &venues, query, venueID); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -110,5 +119,9 @@ func (s *Storage) GetVenue(ctx context.Context, venueID int) (*entity.Venue, err
 		return nil, fmt.Errorf("unable to find venue with id %d: %v", venueID, err)
 	}
 
-	return venue.ToVenue(), nil
+	if len(venues) == 0 {
+		return nil, nil
+	}
+
+	return &venues.ToVenues()[0], nil
 }

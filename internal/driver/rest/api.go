@@ -85,7 +85,10 @@ func (a *API) GetHandler() http.Handler {
 		r.Use(AuthMiddleware)
 
 		r.Get("/events", a.serveGetEvents)
-		r.Get("/venues", a.serveGetVenues)
+		r.Route("/venues", func(r chi.Router) {
+			r.Get("/", a.serveGetVenues)
+			r.Get("/{venue_id}", a.serveGetVenue)
+		})
 	})
 
 	r.Route("/games", func(r chi.Router) {
@@ -192,6 +195,23 @@ func (a *API) serveGetVenues(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.Render(w, r, NewSuccessResp(venues))
+}
+
+func (a *API) serveGetVenue(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	venueID, err := strconv.Atoi(chi.URLParam(r, "venue_id"))
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+
+	venue, err := a.venueService.GetVenue(ctx, venueID)
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(venue))
 }
 
 func (a *API) serveCreateSession(w http.ResponseWriter, r *http.Request) {
@@ -341,6 +361,8 @@ func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		err = NewPartnerNotFoundError()
 	case session.ErrInvalidCreds:
 		err = NewSessionInvalidCredsError()
+	case venue.ErrVenueNotFound:
+		err = NewNotFoundError()
 	default:
 		err = NewInternalServerError(err.Error())
 	}

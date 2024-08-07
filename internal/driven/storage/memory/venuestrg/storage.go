@@ -13,6 +13,17 @@ type Storage struct {
 	data map[int]entity.Venue
 }
 
+// GetVenue implements venue.VenueStorage.
+func (s *Storage) GetVenue(ctx context.Context, venueID int) (*entity.Venue, error) {
+	v, exist := s.data[venueID]
+	if !exist {
+		// if item is not found, returns nil as expected by venue interface
+		return nil, nil
+	}
+
+	return &v, nil
+}
+
 // GetVenues implements venue.VenueStorage.
 func (s *Storage) GetVenues(ctx context.Context, filter entity.GetVenueFilter) ([]entity.Venue, error) {
 	var venues []entity.Venue

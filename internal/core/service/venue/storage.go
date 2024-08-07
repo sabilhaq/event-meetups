@@ -10,6 +10,10 @@ type VenueStorage interface {
 	// GetVenues returns list of venue available in the system.
 	// Returns nil when there is no venues available.
 	GetVenues(ctx context.Context, filter entity.GetVenueFilter) ([]entity.Venue, error)
+
+	// GetVenue returns venue instance for given venueID from storage. Returns nil
+	// when given venueID is not found in database.
+	GetVenue(ctx context.Context, venueID int) (*entity.Venue, error)
 }
 
 type EventStorage interface {
