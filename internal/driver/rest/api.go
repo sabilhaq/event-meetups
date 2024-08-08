@@ -93,20 +93,20 @@ func (a *API) GetHandler() http.Handler {
 			r.Get("/", a.serveGetVenues)
 			r.Get("/{venue_id}", a.serveGetVenue)
 		})
-	})
 
-	r.Route("/meetups", func(r chi.Router) {
-		r.Post("/", a.serveCreateMeetup)
-		// r.Get("/", a.serveGetMeetups)
-		r.Route("/{meetup_id}", func(r chi.Router) {
-			r.Get("/", a.serveGetGameDetails)
-			r.Get("/scenario", a.serveGetScenario)
-			r.Route("/battle", func(r chi.Router) {
-				r.Put("/", a.serveStartBattle)
-				r.Get("/", a.serveGetBattleInfo)
-				r.Put("/turn", a.serveDecideTurn)
-				r.Put("/attack", a.serveAttack)
-				r.Put("/surrender", a.serveSurrender)
+		r.Route("/meetups", func(r chi.Router) {
+			r.Post("/", a.serveCreateMeetup)
+			// r.Get("/", a.serveGetMeetups)
+			r.Route("/{meetup_id}", func(r chi.Router) {
+				r.Get("/", a.serveGetGameDetails)
+				r.Get("/scenario", a.serveGetScenario)
+				r.Route("/battle", func(r chi.Router) {
+					r.Put("/", a.serveStartBattle)
+					r.Get("/", a.serveGetBattleInfo)
+					r.Put("/turn", a.serveDecideTurn)
+					r.Put("/attack", a.serveAttack)
+					r.Put("/surrender", a.serveSurrender)
+				})
 			})
 		})
 	})
@@ -369,6 +369,7 @@ func (a *API) serveSurrender(w http.ResponseWriter, r *http.Request) {
 
 func (a *API) serveCreateMeetup(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	userID := UserFromContext(r.Context())
 
 	var rb createMeetupReqBody
 	err := json.NewDecoder(r.Body).Decode(&rb)
@@ -382,12 +383,13 @@ func (a *API) serveCreateMeetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	meetup, err := a.meetupService.CreateMeetup(ctx, entity.CreateMeetupRequest{
-		Name:       rb.Name,
-		VenueID:    rb.VenueID,
-		EventID:    rb.EventID,
-		StartTs:    rb.StartTs,
-		EndTs:      rb.EndTs,
-		MaxPersons: rb.MaxPersons,
+		Name:        rb.Name,
+		VenueID:     rb.VenueID,
+		EventID:     rb.EventID,
+		StartTs:     rb.StartTs,
+		EndTs:       rb.EndTs,
+		MaxPersons:  rb.MaxPersons,
+		OrganizerID: userID,
 	})
 	if err != nil {
 		handleServiceError(w, r, err)
@@ -412,6 +414,12 @@ func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		err = NewSessionInvalidCredsError()
 	case venue.ErrVenueNotFound:
 		err = NewNotFoundError()
+	case meetup.ErrInvalidEvent:
+		err = NewInvalidEventError()
+	case meetup.ErrExceedVenueCapacity:
+		err = NewExceedVenueCapacityError()
+	case meetup.ErrVenueIsClosed:
+		err = NewVenueIsClosedError()
 	default:
 		err = NewInternalServerError(err.Error())
 	}

@@ -82,6 +82,8 @@ func main() {
 	meetupService, err := meetup.NewService(meetup.ServiceConfig{
 		MeetupStorage: deps.MeetupMeetupStorage,
 		VenueStorage:  deps.MeetupVenueStorage,
+		EventStorage:  deps.MeetupEventStorage,
+		UserStorage:   deps.MeetupUserStorage,
 	})
 	if err != nil {
 		log.Fatalf("unable to initialize meetup service due: %v", err)

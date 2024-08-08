@@ -45,7 +45,7 @@ func New(cfg Config) (*Storage, error) {
 	return s, nil
 }
 
-func (s *Storage) SaveMeetup(ctx context.Context, meetup entity.Meetup) error {
+func (s *Storage) SaveMeetup(ctx context.Context, meetup entity.Meetup) (int, error) {
 	meetupRow := NewMeetupRow(&meetup)
 	query := `
 		REPLACE INTO meetup (
@@ -55,7 +55,7 @@ func (s *Storage) SaveMeetup(ctx context.Context, meetup entity.Meetup) error {
 		)
 	`
 
-	_, err := s.sqlClient.NamedExecContext(ctx, query, map[string]interface{}{
+	res, err := s.sqlClient.NamedExecContext(ctx, query, map[string]interface{}{
 		"id":           meetupRow.ID,
 		"name":         meetupRow.Name,
 		"venue_id":     meetupRow.VenueID,
@@ -69,7 +69,29 @@ func (s *Storage) SaveMeetup(ctx context.Context, meetup entity.Meetup) error {
 		"updated_at":   meetupRow.UpdatedAt,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to execute query due: %w", err)
+		return 0, fmt.Errorf("unable to execute query due: %w", err)
 	}
-	return nil
+
+	id, err := res.LastInsertId()
+	return int(id), err
+}
+
+// CountMeetups implements meetup.VenueStorage.
+func (s *Storage) CountMeetups(ctx context.Context, venueID, eventID int, startTs, endTs int64) (*int, error) {
+	var count int
+
+	query := `
+		SELECT COUNT(*) AS meetups_count
+		FROM meetup m
+		WHERE m.venue_id = ? AND m.event_id = ? AND (
+			(m.start_ts <= ? AND m.end_ts > ?) OR
+			(m.start_ts < ? AND m.end_ts >= ?)
+		)
+	`
+
+	if err := s.sqlClient.GetContext(ctx, &count, query, venueID, eventID, startTs, endTs, startTs, endTs); err != nil {
+		return nil, fmt.Errorf("unable to find supported event with venue id %d and event id %d: %v", venueID, eventID, err)
+	}
+
+	return &count, nil
 }

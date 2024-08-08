@@ -13,8 +13,8 @@ type Storage struct {
 	data map[int]entity.User
 }
 
-// GetUser implements session.UserStorage.
-func (s *Storage) GetUser(ctx context.Context, username string) (*entity.User, error) {
+// GetUserByUsername implements session.UserStorage.
+func (s *Storage) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
 	for _, user := range s.data {
 		if user.Username == username {
 			return &user, nil

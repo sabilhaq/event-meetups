@@ -21,3 +21,9 @@ type GetVenueFilter struct {
 	MeetupStartTS *string
 	MeetupEndTS   *string
 }
+
+type VenueEvent struct {
+	VenueID         int
+	EventID         int
+	MeetupsCapacity int
+}

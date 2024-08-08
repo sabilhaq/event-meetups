@@ -128,5 +128,33 @@ func (s *Storage) GetVenue(ctx context.Context, venueID int) (*entity.Venue, err
 
 // IsEventSupported implements meetup.VenueStorage.
 func (s *Storage) IsEventSupported(ctx context.Context, venueID int, eventID int) (bool, error) {
-	panic("unimplemented")
+	var exists bool
+
+	query := `
+		SELECT 
+			EXISTS(SELECT 1 FROM venue_event WHERE venue_id = ? AND event_id = ?)
+	`
+
+	if err := s.sqlClient.GetContext(ctx, &exists, query, venueID, eventID); err != nil {
+		return false, fmt.Errorf("unable to find venue with id %d: %v", venueID, err)
+	}
+
+	return exists, nil
+}
+
+// GetVenueCapacity implements meetup.VenueStorage.
+func (s *Storage) GetVenueCapacity(ctx context.Context, venueID int, eventID int) (*int, error) {
+	var venueEvent shared.VenueEventRow
+
+	query := `
+		SELECT meetups_capacity
+		FROM venue_event
+		WHERE venue_id = ? AND event_id = ?
+	`
+
+	if err := s.sqlClient.GetContext(ctx, &venueEvent, query, venueID, eventID); err != nil {
+		return nil, fmt.Errorf("unable to find supported event with venue id %d and event id %d: %v", venueID, eventID, err)
+	}
+
+	return &venueEvent.MeetupsCapacity, nil
 }

@@ -1,6 +1,8 @@
 package meetupstrg
 
 import (
+	"time"
+
 	"github.com/Haraj-backend/hex-monscape/internal/core/entity"
 )
 
@@ -44,17 +46,15 @@ type MeetupJoinVenueEventRows []MeetupJoinVenueEventRow
 
 func (r *MeetupJoinVenueEventRow) ToMeetup() *entity.Meetup {
 	return &entity.Meetup{
-		ID:              r.ID,
-		Name:            r.Name,
-		Venue:           entity.MeetupVenue{ID: r.VenueID, Name: r.VenueName},
-		Event:           entity.MeetupEvent{ID: r.EventID, Name: r.EventName},
-		StartTs:         r.StartTs,
-		EndTs:           r.EndTs,
-		MaxPersons:      r.MaxPersons,
-		Organizer:       entity.MeetupOrganizer{ID: r.OrganizerID, Username: r.OrganizerUsername, Email: r.OrganizerEmail},
-		Status:          r.Status,
-		CancelledReason: r.CancelledReason,
-		CancelledAt:     r.CancelledAt,
+		ID:         r.ID,
+		Name:       r.Name,
+		Venue:      entity.MeetupVenue{ID: r.VenueID, Name: r.VenueName},
+		Event:      entity.MeetupEvent{ID: r.EventID, Name: r.EventName},
+		StartTs:    r.StartTs,
+		EndTs:      r.EndTs,
+		MaxPersons: r.MaxPersons,
+		Organizer:  entity.MeetupOrganizer{ID: r.OrganizerID, Username: r.OrganizerUsername, Email: r.OrganizerEmail},
+		Status:     r.Status,
 	}
 }
 
@@ -67,6 +67,8 @@ func (r MeetupJoinVenueEventRows) ToMeetups() []entity.Meetup {
 }
 
 func NewMeetupRow(meetup *entity.Meetup) *MeetupRow {
+	now := time.Now().Unix()
+
 	return &MeetupRow{
 		ID:              meetup.ID,
 		Name:            meetup.Name,
@@ -77,9 +79,9 @@ func NewMeetupRow(meetup *entity.Meetup) *MeetupRow {
 		MaxPersons:      meetup.MaxPersons,
 		OrganizerID:     meetup.Organizer.ID,
 		Status:          meetup.Status,
-		CancelledReason: meetup.CancelledReason,
-		CancelledAt:     meetup.CancelledAt,
-		CreatedAt:       meetup.CreatedAt,
-		UpdatedAt:       meetup.UpdatedAt,
+		CancelledReason: "",
+		CancelledAt:     nil,
+		CreatedAt:       now,
+		UpdatedAt:       &now,
 	}
 }

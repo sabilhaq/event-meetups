@@ -50,6 +50,8 @@ type storageDeps struct {
 	VenueEventStorage     venue.EventStorage
 	MeetupMeetupStorage   meetup.MeetupStorage
 	MeetupVenueStorage    meetup.VenueStorage
+	MeetupEventStorage    meetup.EventStorage
+	MeetupUserStorage     meetup.UserStorage
 }
 
 func initStorageDeps(cfg config) (*storageDeps, error) {
@@ -223,6 +225,8 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.VenueEventStorage = eventStorage
 		deps.MeetupMeetupStorage = meetupStorage
 		deps.MeetupVenueStorage = venueStorage
+		deps.MeetupEventStorage = eventStorage
+		deps.MeetupUserStorage = userStorage
 
 	default:
 		return nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Type)

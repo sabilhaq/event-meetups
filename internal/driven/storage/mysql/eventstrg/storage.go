@@ -59,7 +59,7 @@ func (s *Storage) GetEvent(ctx context.Context, eventID int) (*entity.Event, err
 			id,
 			name
 		FROM event
-		WHERE eventID = ?
+		WHERE id = ?
 	`
 
 	if err := s.sqlClient.GetContext(ctx, &event, query, eventID); err != nil {

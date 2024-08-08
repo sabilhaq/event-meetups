@@ -103,3 +103,27 @@ func NewSessionInvalidCredsError() *Error {
 		Message:    "invalid username or password",
 	}
 }
+
+func NewInvalidEventError() *Error {
+	return &Error{
+		StatusCode: http.StatusBadRequest,
+		Err:        "ERR_INVALID_EVENT",
+		Message:    "event is not supported by the venue",
+	}
+}
+
+func NewExceedVenueCapacityError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_EXCEED_VENUE_CAPACITY",
+		Message:    "venue capacity is full on the designated meetup time",
+	}
+}
+
+func NewVenueIsClosedError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_VENUE_IS_CLOSED",
+		Message:    "venue is closed on the designated meetup time",
+	}
+}

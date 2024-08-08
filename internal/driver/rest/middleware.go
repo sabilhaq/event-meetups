@@ -59,3 +59,7 @@ func ValidateJWT(tokenStr string) (*Claims, error) {
 
 	return claims, nil
 }
+
+func UserFromContext(ctx context.Context) int {
+	return ctx.Value(contextKeyUser).(int)
+}
