@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS event (
   name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE venue (
+CREATE TABLE IF NOT EXISTS venue (
   id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   open_days VARCHAR(15) NOT NULL,  -- To store the days of the week as a comma-separated list
@@ -65,11 +65,39 @@ CREATE TABLE venue (
   timezone VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE venue_event (
+CREATE TABLE IF NOT EXISTS venue_event (
   venue_id INT NOT NULL,
   event_id INT NOT NULL,
   meetups_capacity INT NOT NULL,
   PRIMARY KEY (venue_id, event_id),
   FOREIGN KEY (venue_id) REFERENCES venue(id),
   FOREIGN KEY (event_id) REFERENCES event(id)
+);
+
+CREATE TABLE IF NOT EXISTS meetup (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  venue_id INT NOT NULL,
+  event_id INT NOT NULL,
+  start_ts BIGINT NOT NULL,
+  end_ts BIGINT NOT NULL,
+  max_persons INT NOT NULL,
+  organizer_id INT NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  cancelled_reason VARCHAR(255),
+  cancelled_at BIGINT,
+  created_at BIGINT(20) NOT NULL,
+  updated_at BIGINT(20),
+  FOREIGN KEY (venue_id) REFERENCES venue(id),
+  FOREIGN KEY (event_id) REFERENCES event(id),
+  FOREIGN KEY (organizer_id) REFERENCES user(id)
+);
+
+CREATE TABLE IF NOT EXISTS meetup_participant (
+  meetup_id INT NOT NULL,
+  user_id INT NOT NULL,
+  joined_at BIGINT NOT NULL,
+  PRIMARY KEY (meetup_id, user_id),
+  FOREIGN KEY (meetup_id) REFERENCES meetup(id),
+  FOREIGN KEY (user_id) REFERENCES user(id)
 );

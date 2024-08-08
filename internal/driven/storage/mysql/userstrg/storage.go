@@ -31,7 +31,7 @@ func New(cfg Config) (*Storage, error) {
 	return s, nil
 }
 
-func (s *Storage) GetUser(ctx context.Context, username string) (*entity.User, error) {
+func (s *Storage) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
 	var user UserRow
 	query := `
 		SELECT
@@ -50,6 +50,30 @@ func (s *Storage) GetUser(ctx context.Context, username string) (*entity.User, e
 		}
 
 		return nil, fmt.Errorf("unable to find user with username %s: %v", username, err)
+	}
+
+	return user.ToUser(), nil
+}
+
+func (s *Storage) GetUserByID(ctx context.Context, id int) (*entity.User, error) {
+	var user UserRow
+	query := `
+		SELECT
+			id,
+			username,
+			email,
+			password,
+			created_at
+		FROM user
+		WHERE id = ?
+	`
+
+	if err := s.sqlClient.GetContext(ctx, &user, query, id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("unable to find user with id %d: %v", id, err)
 	}
 
 	return user.ToUser(), nil

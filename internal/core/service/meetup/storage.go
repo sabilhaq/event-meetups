@@ -11,8 +11,16 @@ type MeetupStorage interface {
 	// Returns nil when there is no meetups available.
 	GetMeetups(ctx context.Context) ([]entity.Meetup, error)
 
+	// CountMeetups returns existing meetups count for given venueID, eventID, startTs, and endTs from storage. Returns zero
+	// when given filter is not found in database.
+	CountMeetups(ctx context.Context, venueID, eventID int, startTs, endTs int64) (*int, error)
+
+	// // IsVenueClosed returns true if meetup within venue operating hours.
+	// // Returns false otherwise.
+	// IsVenueClosed(ctx context.Context, venueID, eventID int) (bool, error)
+
 	// SaveMeetup is used for save meetup in storage.
-	SaveMeetup(ctx context.Context, meetup entity.Meetup) error
+	SaveMeetup(ctx context.Context, meetup entity.Meetup) (int, error)
 
 	// GetMeetup returns meetup instance for given meetupID from storage. Returns nil
 	// when given meetupID is not found in database.
@@ -20,4 +28,30 @@ type MeetupStorage interface {
 
 	// CancelMeetup is used to update meetup status to cancelled in storage.
 	CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) error
+}
+
+type VenueStorage interface {
+	// IsEventSupported returns true if event supported by the venue.
+	// Returns false otherwise.
+	IsEventSupported(ctx context.Context, venueID, eventID int) (bool, error)
+
+	// GetVenueCapacity returns venue capacity for given venueID and eventID from storage. Returns zero
+	// when given venueID is not found in database.
+	GetVenueCapacity(ctx context.Context, venueID, eventID int) (*int, error)
+
+	// GetVenue returns venue instance for given venueID from storage. Returns nil
+	// when given venueID is not found in database.
+	GetVenue(ctx context.Context, venueID int) (*entity.Venue, error)
+}
+
+type EventStorage interface {
+	// GetEvent returns event instance for given eventID from storage. Returns nil
+	// when given eventID is not found in database.
+	GetEvent(ctx context.Context, eventID int) (*entity.Event, error)
+}
+
+type UserStorage interface {
+	// GetUserByID returns user instance for given userID from storage. Returns nil
+	// when given userID is not found in database.
+	GetUserByID(ctx context.Context, userID int) (*entity.User, error)
 }

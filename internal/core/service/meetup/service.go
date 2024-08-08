@@ -11,7 +11,10 @@ import (
 )
 
 var (
-	ErrMeetupNotFound = errors.New("meetup is not found")
+	ErrMeetupNotFound      = errors.New("meetup is not found")
+	ErrInvalidEvent        = errors.New("event is not supported by the venue")
+	ErrExceedVenueCapacity = errors.New("venue capacity is full on the designated meetup time")
+	ErrVenueIsClosed       = errors.New("venue is closed on the designated meetup time")
 )
 
 type Service interface {
@@ -53,10 +56,86 @@ type Service interface {
 
 type service struct {
 	meetupStorage MeetupStorage
+	venueStorage  VenueStorage
+	eventStorage  EventStorage
+	userStorage   UserStorage
 }
 
 func (s *service) CreateMeetup(ctx context.Context, req entity.CreateMeetupRequest) (*entity.Meetup, error) {
-	// TODO: validation
+	// check is event supported by the venue
+	isEventSupported, err := s.venueStorage.IsEventSupported(ctx, req.VenueID, req.EventID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to check is event supported by the venue due: %w", err)
+	}
+	if !isEventSupported {
+		return nil, ErrInvalidEvent
+	}
+
+	// check is venue capacity exceed
+	venueCapacity, err := s.venueStorage.GetVenueCapacity(ctx, req.VenueID, req.EventID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get supported venue due: %w", err)
+	}
+	if venueCapacity == nil {
+		return nil, ErrInvalidEvent
+	}
+
+	existingMeetupsCount, err := s.meetupStorage.CountMeetups(ctx, req.VenueID, req.EventID, req.StartTs, req.EndTs)
+	if err != nil || existingMeetupsCount == nil {
+		return nil, fmt.Errorf("unable to get existing meetups count due: %w", err)
+	}
+
+	if *existingMeetupsCount >= *venueCapacity {
+		return nil, ErrExceedVenueCapacity
+	}
+
+	// check is meetup within venue operating hours
+	venue, err := s.venueStorage.GetVenue(ctx, req.VenueID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get existing meetups count due: %w", err)
+	}
+
+	// Convert timestamp to the venue's timezone
+	loc, err := time.LoadLocation(venue.Timezone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load location: %v", err)
+	}
+	startTime := time.Unix(req.StartTs, 0).In(loc)
+	endTime := time.Unix(req.EndTs, 0).In(loc)
+
+	// get day of the week for start and end time
+	startDay := startTime.Weekday()
+	endDay := endTime.Weekday()
+
+	// check if the venue is open on the days of the meetup
+	openDays := make(map[int]bool)
+	for _, day := range venue.OpenDays {
+		openDays[day] = true
+	}
+
+	if !openDays[int(startDay)] || !openDays[int(endDay)] {
+		return nil, ErrVenueIsClosed // meetup is not within venue's operating days
+	}
+
+	// convert venue open and close time to full time in venue's timezone
+	openTime, err := time.ParseInLocation("15:04", venue.OpenAt, loc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse open time: %v", err)
+	}
+	closeTime, err := time.ParseInLocation("15:04", venue.ClosedAt, loc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse close time: %v", err)
+	}
+
+	// extract the time of day from the meetup start and end times
+	startHour := time.Date(0, 1, 1, startTime.Hour(), startTime.Minute(), 0, 0, time.UTC)
+	endHour := time.Date(0, 1, 1, endTime.Hour(), endTime.Minute(), 0, 0, time.UTC)
+
+	// check if meetup start and end times are within the operating hours (ignoring the date)
+	if startHour.Before(openTime) || endHour.After(closeTime) {
+		return nil, ErrVenueIsClosed // Meetup is not within venue's operating hours
+	}
+
 	// initiate new meetup instance
 	cfg := ConvertRequestToConfig(req)
 	meetup, err := entity.NewMeetup(cfg)
@@ -64,10 +143,30 @@ func (s *service) CreateMeetup(ctx context.Context, req entity.CreateMeetupReque
 		return nil, fmt.Errorf("unable to initialize meetup instance due: %w", err)
 	}
 	// store the meetup instance on storage
-	err = s.meetupStorage.SaveMeetup(ctx, *meetup)
+	id, err := s.meetupStorage.SaveMeetup(ctx, *meetup)
 	if err != nil {
 		return nil, fmt.Errorf("unable to save meetup instance due: %w", err)
 	}
+
+	event, err := s.eventStorage.GetEvent(ctx, req.EventID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get event due: %w", err)
+	}
+
+	organizer, err := s.userStorage.GetUserByID(ctx, req.OrganizerID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get user due: %w", err)
+	}
+
+	meetup.ID = id
+	meetup.Venue.ID = venue.ID
+	meetup.Venue.Name = venue.Name
+	meetup.Event.ID = event.ID
+	meetup.Event.Name = event.Name
+	meetup.Organizer.ID = organizer.ID
+	meetup.Organizer.Username = organizer.Username
+	meetup.Organizer.Email = organizer.Email
+
 	return meetup, nil
 }
 
@@ -168,6 +267,9 @@ func (s *service) GetIncomingMeetups(ctx context.Context) ([]entity.Meetup, erro
 
 type ServiceConfig struct {
 	MeetupStorage MeetupStorage `validate:"nonnil"`
+	VenueStorage  VenueStorage  `validate:"nonnil"`
+	EventStorage  EventStorage  `validate:"nonnil"`
+	UserStorage   UserStorage   `validate:"nonnil"`
 }
 
 func (c ServiceConfig) Validate() error {
@@ -182,6 +284,9 @@ func NewService(cfg ServiceConfig) (Service, error) {
 	}
 	s := &service{
 		meetupStorage: cfg.MeetupStorage,
+		venueStorage:  cfg.VenueStorage,
+		eventStorage:  cfg.EventStorage,
+		userStorage:   cfg.UserStorage,
 	}
 	return s, nil
 }

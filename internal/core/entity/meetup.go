@@ -5,12 +5,13 @@ import (
 )
 
 type MeetupConfig struct {
-	Name       string `validate:"nonzero"`
-	VenueID    int    `validate:"nonzero"`
-	EventID    int    `validate:"nonzero"`
-	StartTs    int    `validate:"nonzero"`
-	EndTs      int    `validate:"nonzero"`
-	MaxPersons int    `validate:"nonzero"`
+	Name        string `validate:"nonzero"`
+	VenueID     int    `validate:"nonzero"`
+	EventID     int    `validate:"nonzero"`
+	StartTs     int64  `validate:"nonzero"`
+	EndTs       int64  `validate:"nonzero"`
+	MaxPersons  int    `validate:"nonzero"`
+	OrganizerID int    `validate:"nonzero"`
 }
 
 func (c MeetupConfig) Validate() error {
@@ -18,12 +19,13 @@ func (c MeetupConfig) Validate() error {
 }
 
 type CreateMeetupRequest struct {
-	Name       string
-	VenueID    int
-	EventID    int
-	StartTs    int
-	EndTs      int
-	MaxPersons int
+	Name        string
+	VenueID     int
+	EventID     int
+	StartTs     int64
+	EndTs       int64
+	MaxPersons  int
+	OrganizerID int
 }
 
 type Meetup struct {
@@ -31,8 +33,8 @@ type Meetup struct {
 	Name               string
 	Venue              MeetupVenue
 	Event              MeetupEvent
-	StartTs            int
-	EndTs              int
+	StartTs            int64
+	EndTs              int64
 	MaxPersons         int
 	Organizer          MeetupOrganizer
 	JoinedPersons      []JoinedPerson
@@ -90,8 +92,8 @@ type CancelMeetupResponse struct {
 	Name            string
 	Venue           MeetupVenue
 	Event           MeetupEvent
-	StartTs         int
-	EndTs           int
+	StartTs         int64
+	EndTs           int64
 	MaxPersons      int
 	Organizer       MeetupOrganizer
 	Status          string
@@ -105,14 +107,16 @@ func NewMeetup(cfg MeetupConfig) (*Meetup, error) {
 		return nil, err
 	}
 	m := &Meetup{
-		Name:       cfg.Name,
-		Venue:      MeetupVenue{ID: cfg.VenueID},
-		Event:      MeetupEvent{ID: cfg.EventID},
-		StartTs:    cfg.StartTs,
-		EndTs:      cfg.EndTs,
-		MaxPersons: cfg.MaxPersons,
-		IsJoined:   false,
-		Status:     "open",
+		Name:          cfg.Name,
+		Venue:         MeetupVenue{ID: cfg.VenueID},
+		Event:         MeetupEvent{ID: cfg.EventID},
+		StartTs:       cfg.StartTs,
+		EndTs:         cfg.EndTs,
+		MaxPersons:    cfg.MaxPersons,
+		IsJoined:      false,
+		Organizer:     MeetupOrganizer{ID: cfg.OrganizerID},
+		JoinedPersons: []JoinedPerson{},
+		Status:        "open",
 	}
 	return m, nil
 }

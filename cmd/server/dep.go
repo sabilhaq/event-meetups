@@ -6,6 +6,7 @@ import (
 
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/battle"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/event"
+	"github.com/Haraj-backend/hex-monscape/internal/core/service/meetup"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/play"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/session"
 	"github.com/Haraj-backend/hex-monscape/internal/core/service/venue"
@@ -30,6 +31,7 @@ import (
 	sqlbattlestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/battlestrg"
 	sqleventstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/eventstrg"
 	sqlgamestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/gamestrg"
+	sqlmeetupstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/meetupstrg"
 	sqlmonstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/monstrg"
 	sqluserstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/userstrg"
 	sqlvenuestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/mysql/venuestrg"
@@ -46,6 +48,10 @@ type storageDeps struct {
 	EventEventStorage     event.EventStorage
 	VenueVenueStorage     venue.VenueStorage
 	VenueEventStorage     venue.EventStorage
+	MeetupMeetupStorage   meetup.MeetupStorage
+	MeetupVenueStorage    meetup.VenueStorage
+	MeetupEventStorage    meetup.EventStorage
+	MeetupUserStorage     meetup.UserStorage
 }
 
 func initStorageDeps(cfg config) (*storageDeps, error) {
@@ -200,6 +206,11 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize venue storage due: %v", err)
 		}
+		// initialize meetup storage
+		meetupStorage, err := sqlmeetupstrg.New(sqlmeetupstrg.Config{SQLClient: sqlClient})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize meetup storage due: %v", err)
+		}
 
 		// set storages
 		deps.BattleGameStorage = gameStorage
@@ -212,6 +223,10 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.EventEventStorage = eventStorage
 		deps.VenueVenueStorage = venueStorage
 		deps.VenueEventStorage = eventStorage
+		deps.MeetupMeetupStorage = meetupStorage
+		deps.MeetupVenueStorage = venueStorage
+		deps.MeetupEventStorage = eventStorage
+		deps.MeetupUserStorage = userStorage
 
 	default:
 		return nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Type)
