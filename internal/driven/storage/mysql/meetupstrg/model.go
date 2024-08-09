@@ -23,31 +23,32 @@ type MeetupRow struct {
 }
 
 type MeetupJoinVenueEventRow struct {
-	ID                int    `db:"id"`
-	Name              string `db:"name"`
-	VenueID           int    `db:"venue_id"`
-	VenueName         string `db:"venue_name"`
-	EventID           int    `db:"event_id"`
-	EventName         string `db:"event_name"`
-	StartTs           int64  `db:"start_ts"`
-	EndTs             int64  `db:"end_ts"`
-	MaxPersons        int    `db:"max_persons"`
-	OrganizerID       int    `db:"organizer_id"`
-	OrganizerUsername string `db:"organizer_username"`
-	OrganizerEmail    string `db:"organizer_email"`
-	Status            string `db:"status"`
-	CancelledReason   string `db:"cancelled_reason"`
-	CancelledAt       *int64 `db:"cancelled_at"`
-	CreatedAt         int64  `db:"created_at"`
-	UpdatedAt         int64  `db:"updated_at"`
+	MeetupID           int    `db:"meetup_id"`
+	MeetupName         string `db:"meetup_name"`
+	VenueID            int    `db:"venue_id"`
+	VenueName          string `db:"venue_name"`
+	EventID            int    `db:"event_id"`
+	EventName          string `db:"event_name"`
+	StartTs            int64  `db:"start_ts"`
+	EndTs              int64  `db:"end_ts"`
+	MaxPersons         int    `db:"max_persons"`
+	OrganizerID        int    `db:"organizer_id"`
+	OrganizerUsername  string `db:"organizer_username"`
+	OrganizerEmail     string `db:"organizer_email"`
+	JoinedPersonsCount int    `db:"joined_persons_count"`
+	Status             string `db:"status"`
+	CancelledReason    string `db:"cancelled_reason"`
+	CancelledAt        *int64 `db:"cancelled_at"`
+	CreatedAt          int64  `db:"created_at"`
+	UpdatedAt          int64  `db:"updated_at"`
 }
 
 type MeetupJoinVenueEventRows []MeetupJoinVenueEventRow
 
 func (r *MeetupJoinVenueEventRow) ToMeetup() *entity.Meetup {
 	return &entity.Meetup{
-		ID:         r.ID,
-		Name:       r.Name,
+		ID:         r.MeetupID,
+		Name:       r.MeetupName,
 		Venue:      entity.MeetupVenue{ID: r.VenueID, Name: r.VenueName},
 		Event:      entity.MeetupEvent{ID: r.EventID, Name: r.EventName},
 		StartTs:    r.StartTs,

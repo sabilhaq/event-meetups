@@ -9,7 +9,7 @@ import (
 type MeetupStorage interface {
 	// GetMeetups returns list of meetup available in the system.
 	// Returns nil when there is no meetups available.
-	GetMeetups(ctx context.Context) ([]entity.Meetup, error)
+	GetMeetups(ctx context.Context, filter entity.GetMeetupFilter) ([]entity.Meetup, error)
 
 	// CountMeetups returns existing meetups count for given venueID, eventID, startTs, and endTs from storage. Returns zero
 	// when given filter is not found in database.

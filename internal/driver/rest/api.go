@@ -96,7 +96,7 @@ func (a *API) GetHandler() http.Handler {
 
 		r.Route("/meetups", func(r chi.Router) {
 			r.Post("/", a.serveCreateMeetup)
-			// r.Get("/", a.serveGetMeetups)
+			r.Get("/", a.serveGetMeetups)
 			r.Route("/{meetup_id}", func(r chi.Router) {
 				r.Get("/", a.serveGetGameDetails)
 				r.Get("/scenario", a.serveGetScenario)
@@ -396,6 +396,38 @@ func (a *API) serveCreateMeetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.Render(w, r, NewSuccessResp(meetup))
+}
+
+func (a *API) serveGetMeetups(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	filter := entity.GetMeetupFilter{}
+
+	eventIDStr := r.URL.Query().Get("event_id")
+	if eventIDStr != "" {
+		eventID, err := strconv.Atoi(eventIDStr)
+		if err != nil {
+			render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		}
+		filter.EventID = &eventID
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr != "" {
+		limit, err := strconv.Atoi(limitStr)
+		if err != nil {
+			render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		}
+		filter.Limit = &limit
+	}
+
+	meetups, err := a.meetupService.GetMeetups(ctx, filter)
+	if err != nil {
+		render.Render(w, r, NewErrorResp(err))
+		return
+	}
+	render.Render(w, r, NewSuccessResp(map[string]interface{}{
+		"meetups": meetups,
+	}))
 }
 
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {

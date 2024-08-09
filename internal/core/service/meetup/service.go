@@ -25,7 +25,8 @@ type Service interface {
 	CreateMeetup(ctx context.Context, req entity.CreateMeetupRequest) (*entity.Meetup, error)
 
 	// GetMeetups returns all meetups available in the system.
-	GetMeetups(ctx context.Context) ([]entity.GetMeetupsResponse, error)
+	// The result is sorted from the nearest meetup time to the furthest.
+	GetMeetups(ctx context.Context, filter entity.GetMeetupFilter) ([]entity.GetMeetupsResponse, error)
 
 	// GetMeetup returns a single meetup from storage from given meetup id. Upon meetup is not found, it returns
 	// `ErrMeetupNotFound`.
@@ -175,18 +176,29 @@ func ConvertRequestToConfig(req entity.CreateMeetupRequest) entity.MeetupConfig 
 	return entity.MeetupConfig(req)
 }
 
-func (s *service) GetMeetups(ctx context.Context) ([]entity.GetMeetupsResponse, error) {
-	meetups, err := s.meetupStorage.GetMeetups(ctx)
+func (s *service) GetMeetups(ctx context.Context, filter entity.GetMeetupFilter) ([]entity.GetMeetupsResponse, error) {
+	meetups, err := s.meetupStorage.GetMeetups(ctx, entity.GetMeetupFilter{
+		EventID: filter.EventID,
+		Limit:   filter.Limit,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("unable to get available meetups due: %w", err)
 	}
 	res := make([]entity.GetMeetupsResponse, len(meetups))
 	for i := 0; i < len(meetups); i++ {
 		meetup := entity.GetMeetupsResponse{
-			ID: meetups[i].ID,
-			// TODO: fill fields
+			ID:                 meetups[i].ID,
+			Name:               meetups[i].Name,
+			Venue:              meetups[i].Venue,
+			Event:              meetups[i].Event,
+			StartTs:            meetups[i].StartTs,
+			EndTs:              meetups[i].EndTs,
+			MaxPersons:         meetups[i].MaxPersons,
+			Organizer:          meetups[i].Organizer,
+			JoinedPersonsCount: meetups[i].JoinedPersonsCount,
+			Status:             meetups[i].Status,
 		}
-		res = append(res, meetup)
+		res[i] = meetup
 	}
 	return res, nil
 }
@@ -258,7 +270,7 @@ func (s *service) GetIncomingMeetups(ctx context.Context) ([]entity.Meetup, erro
 	// TODO: validation
 	//
 
-	meetups, err := s.meetupStorage.GetMeetups(ctx)
+	meetups, err := s.meetupStorage.GetMeetups(ctx, entity.GetMeetupFilter{})
 	if err != nil {
 		return nil, fmt.Errorf("unable to get available meetups due: %w", err)
 	}

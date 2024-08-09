@@ -66,13 +66,18 @@ type JoinedPerson struct {
 	JoinedAt int
 }
 
+type GetMeetupFilter struct {
+	EventID *int
+	Limit   *int
+}
+
 type GetMeetupsResponse struct {
 	ID                 int
 	Name               string
 	Venue              MeetupVenue
 	Event              MeetupEvent
-	StartTs            int
-	EndTs              int
+	StartTs            int64
+	EndTs              int64
 	MaxPersons         int
 	Organizer          MeetupOrganizer
 	JoinedPersonsCount int

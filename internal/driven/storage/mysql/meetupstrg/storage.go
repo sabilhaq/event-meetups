@@ -2,7 +2,9 @@ package meetupstrg
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/Haraj-backend/hex-monscape/internal/core/entity"
 	"github.com/jmoiron/sqlx"
@@ -24,8 +26,66 @@ func (s *Storage) GetMeetup(ctx context.Context, meetupID int) (*entity.Meetup, 
 }
 
 // GetMeetups implements meetup.MeetupStorage.
-func (s *Storage) GetMeetups(ctx context.Context) ([]entity.Meetup, error) {
-	panic("unimplemented")
+func (s *Storage) GetMeetups(ctx context.Context, filter entity.GetMeetupFilter) ([]entity.Meetup, error) {
+	var rows MeetupJoinVenueEventRows
+	args := []interface{}{}
+	queryBuilder := strings.Builder{}
+
+	queryBuilder.WriteString(`
+		SELECT
+			m.id AS meetup_id,
+			m.name AS meetup_name,
+			v.id AS venue_id,
+			v.name AS venue_name,
+			e.id AS event_id,
+			e.name AS event_name,
+			m.start_ts,
+			m.end_ts,
+			m.max_persons,
+			u.id AS organizer_id,
+			u.username AS organizer_username,
+			u.email AS organizer_email,
+			(SELECT COUNT(*) FROM meetup_user mu WHERE mu.meetup_id = m.id) AS joined_persons_count,
+			m.status
+		FROM meetup m
+		JOIN venue v ON m.venue_id = v.id
+		JOIN event e ON m.event_id = e.id
+		JOIN user u ON m.organizer_id = u.id
+	`)
+
+	conditions := []string{}
+	conditions = append(conditions, "m.status = ?")
+	args = append(args, "open")
+
+	if filter.EventID != nil {
+		conditions = append(conditions, "event_id = ?")
+		args = append(args, filter.EventID)
+	}
+
+	// Combine conditions with AND
+	if len(conditions) > 0 {
+		queryBuilder.WriteString(" WHERE ")
+		queryBuilder.WriteString(strings.Join(conditions, " AND "))
+	}
+
+	queryBuilder.WriteString(" ORDER BY m.start_ts ASC ")
+
+	if filter.Limit != nil {
+		queryBuilder.WriteString("LIMIT ?")
+		args = append(args, filter.Limit)
+	}
+
+	// Finalize the query
+	query := queryBuilder.String()
+
+	if err := s.sqlClient.SelectContext(ctx, &rows, query, args...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("unable to execute query due: %w", err)
+	}
+
+	return rows.ToMeetups(), nil
 }
 
 type Config struct {
@@ -83,13 +143,16 @@ func (s *Storage) CountMeetups(ctx context.Context, venueID, eventID int, startT
 	query := `
 		SELECT COUNT(*) AS meetups_count
 		FROM meetup m
-		WHERE m.venue_id = ? AND m.event_id = ? AND (
-			(m.start_ts <= ? AND m.end_ts > ?) OR
-			(m.start_ts < ? AND m.end_ts >= ?)
+		WHERE m.venue_id = ? 
+		AND m.event_id = ? 
+		AND (
+			(m.start_ts <= ? AND m.end_ts >= ?) OR 
+			(m.start_ts <= ? AND m.start_ts >= ?) OR 
+			(m.start_ts >= ? AND m.start_ts <= ?) 			
 		)
 	`
 
-	if err := s.sqlClient.GetContext(ctx, &count, query, venueID, eventID, startTs, endTs, startTs, endTs); err != nil {
+	if err := s.sqlClient.GetContext(ctx, &count, query, venueID, eventID, startTs, endTs, startTs, endTs, startTs, endTs); err != nil {
 		return nil, fmt.Errorf("unable to find supported event with venue id %d and event id %d: %v", venueID, eventID, err)
 	}
 
