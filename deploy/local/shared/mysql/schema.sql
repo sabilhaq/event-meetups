@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS meetup (
   FOREIGN KEY (organizer_id) REFERENCES user(id)
 );
 
-CREATE TABLE IF NOT EXISTS meetup_participant (
+CREATE TABLE IF NOT EXISTS meetup_user (
   meetup_id INT NOT NULL,
   user_id INT NOT NULL,
   joined_at BIGINT NOT NULL,
