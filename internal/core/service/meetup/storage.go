@@ -7,24 +7,20 @@ import (
 )
 
 type MeetupStorage interface {
-	// GetMeetups returns list of meetup available in the system.
-	// Returns nil when there is no meetups available.
-	GetMeetups(ctx context.Context, filter entity.GetMeetupFilter) ([]entity.Meetup, error)
-
 	// CountMeetups returns existing meetups count for given venueID, eventID, startTs, and endTs from storage. Returns zero
 	// when given filter is not found in database.
 	CountMeetups(ctx context.Context, venueID, eventID int, startTs, endTs int64) (*int, error)
 
-	// // IsVenueClosed returns true if meetup within venue operating hours.
-	// // Returns false otherwise.
-	// IsVenueClosed(ctx context.Context, venueID, eventID int) (bool, error)
-
 	// SaveMeetup is used for save meetup in storage.
 	SaveMeetup(ctx context.Context, meetup entity.Meetup) (int, error)
 
+	// GetMeetups returns list of meetup available in the system.
+	// Returns nil when there is no meetups available.
+	GetMeetups(ctx context.Context, filter entity.GetMeetupFilter) ([]entity.Meetup, error)
+
 	// GetMeetup returns meetup instance for given meetupID from storage. Returns nil
 	// when given meetupID is not found in database.
-	GetMeetup(ctx context.Context, meetupID int) (*entity.Meetup, error)
+	GetMeetup(ctx context.Context, meetupID, userID int) (*entity.Meetup, bool, error)
 
 	// CancelMeetup is used to update meetup status to cancelled in storage.
 	CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) error

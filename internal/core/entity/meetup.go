@@ -37,10 +37,12 @@ type Meetup struct {
 	EndTs              int64
 	MaxPersons         int
 	Organizer          MeetupOrganizer
-	JoinedPersons      []JoinedPerson
+	JoinedPersons      []JoinedPerson `json:"joined_persons,omitempty"`
 	JoinedPersonsCount int
 	IsJoined           bool
 	Status             string
+	CancelledReason    *string `json:"cancelled_reason,omitempty"`
+	CancelledAt        *int64  `json:"cancelled_at,omitempty"`
 }
 
 type MeetupVenue struct {
@@ -60,10 +62,10 @@ type MeetupOrganizer struct {
 }
 
 type JoinedPerson struct {
-	ID       string
+	ID       int
 	Username string
 	Email    string
-	JoinedAt int
+	JoinedAt int64
 }
 
 type GetMeetupFilter struct {

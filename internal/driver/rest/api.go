@@ -98,7 +98,7 @@ func (a *API) GetHandler() http.Handler {
 			r.Post("/", a.serveCreateMeetup)
 			r.Get("/", a.serveGetMeetups)
 			r.Route("/{meetup_id}", func(r chi.Router) {
-				r.Get("/", a.serveGetGameDetails)
+				r.Get("/", a.serveGetMeetup)
 				r.Get("/scenario", a.serveGetScenario)
 				r.Route("/battle", func(r chi.Router) {
 					r.Put("/", a.serveStartBattle)
@@ -428,6 +428,24 @@ func (a *API) serveGetMeetups(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, NewSuccessResp(map[string]interface{}{
 		"meetups": meetups,
 	}))
+}
+
+func (a *API) serveGetMeetup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := UserFromContext(r.Context())
+
+	meetupID, err := strconv.Atoi(chi.URLParam(r, "meetup_id"))
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+
+	meetup, err := a.meetupService.GetMeetup(ctx, meetupID, userID)
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(meetup))
 }
 
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {

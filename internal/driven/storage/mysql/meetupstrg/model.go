@@ -43,6 +43,73 @@ type MeetupJoinVenueEventRow struct {
 	UpdatedAt          int64  `db:"updated_at"`
 }
 
+type MeetupJoinVenueEventUserRows []MeetupJoinVenueEventUserRow
+
+type MeetupJoinVenueEventUserRow struct {
+	ID                       int             `db:"id"`
+	Name                     string          `db:"name"`
+	Venue                    MeetupVenue     `db:"venue"`
+	Event                    MeetupEvent     `db:"event"`
+	StartTs                  int64           `db:"start_ts"`
+	EndTs                    int64           `db:"end_ts"`
+	MaxPersons               int             `db:"max_persons"`
+	Organizer                MeetupOrganizer `db:"organizer"`
+	JoinedPersons            []JoinedPerson  `db:"joined_persons"`
+	JoinedPersonsCount       int             `db:"joined_persons_count"`
+	IsJoined                 bool            `db:"is_joined"`
+	Status                   string          `db:"status"`
+	CancelledReason          *string         `db:"cancelled_reason"`
+	CancelledAt              *int64          `db:"cancelled_at"`
+	IsOrganizerOrParticipant bool            `db:"is_organizer_or_participant"`
+}
+
+type MeetupVenue struct {
+	ID   int    `db:"id"`
+	Name string `db:"name"`
+}
+
+type MeetupEvent struct {
+	ID   int    `db:"id"`
+	Name string `db:"name"`
+}
+
+type MeetupOrganizer struct {
+	ID       int    `db:"id"`
+	Username string `db:"username"`
+	Email    string `db:"email"`
+}
+
+type JoinedPerson struct {
+	ID       int    `db:"id"`
+	Username string `db:"username"`
+	Email    string `db:"email"`
+	JoinedAt int64  `db:"joined_at"`
+}
+
+func (r *MeetupJoinVenueEventUserRow) ToMeetup() *entity.Meetup {
+	joinedPersons := make([]entity.JoinedPerson, len(r.JoinedPersons))
+	for i, jp := range r.JoinedPersons {
+		joinedPersons[i] = entity.JoinedPerson(jp)
+	}
+
+	return &entity.Meetup{
+		ID:                 r.ID,
+		Name:               r.Name,
+		Venue:              entity.MeetupVenue(r.Venue),
+		Event:              entity.MeetupEvent(r.Event),
+		StartTs:            r.StartTs,
+		EndTs:              r.EndTs,
+		MaxPersons:         r.MaxPersons,
+		Organizer:          entity.MeetupOrganizer(r.Organizer),
+		JoinedPersons:      joinedPersons,
+		JoinedPersonsCount: r.JoinedPersonsCount,
+		IsJoined:           r.IsJoined,
+		Status:             r.Status,
+		CancelledReason:    r.CancelledReason,
+		CancelledAt:        r.CancelledAt,
+	}
+}
+
 type MeetupJoinVenueEventRows []MeetupJoinVenueEventRow
 
 func (r *MeetupJoinVenueEventRow) ToMeetup() *entity.Meetup {

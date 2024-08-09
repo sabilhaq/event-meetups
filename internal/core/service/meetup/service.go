@@ -30,7 +30,7 @@ type Service interface {
 
 	// GetMeetup returns a single meetup from storage from given meetup id. Upon meetup is not found, it returns
 	// `ErrMeetupNotFound`.
-	GetMeetup(ctx context.Context, meetupID int) (*entity.Meetup, error)
+	GetMeetup(ctx context.Context, meetupID, userID int) (*entity.Meetup, error)
 
 	// UpdateMeetup is used to update a meetup. Only the organizer of the meetup can update the meetup. Update action is limited to:
 	// - Change the name of the meetup
@@ -203,25 +203,26 @@ func (s *service) GetMeetups(ctx context.Context, filter entity.GetMeetupFilter)
 	return res, nil
 }
 
-func (s *service) GetMeetup(ctx context.Context, meetupID int) (*entity.Meetup, error) {
-	meetup, err := s.getMeetupInstance(ctx, meetupID)
-	if meetup == nil {
-		return nil, ErrMeetupNotFound
-	}
-	return meetup, err
-}
-
-// getMeetupInstance returns meetup for given meetup id, if meetup is not found
+// GetMeetup returns meetup for given meetup id, if meetup is not found
 // will be returned nil.
-func (s *service) getMeetupInstance(ctx context.Context, meetupID int) (*entity.Meetup, error) {
-	meetup, err := s.meetupStorage.GetMeetup(ctx, meetupID)
+func (s *service) GetMeetup(ctx context.Context, meetupID, userID int) (*entity.Meetup, error) {
+	meetup, isOrganizerOrParticipant, err := s.meetupStorage.GetMeetup(ctx, meetupID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get meetup due: %w", err)
 	}
 	if meetup == nil {
-		return nil, nil
+		return nil, ErrMeetupNotFound
 	}
-	return meetup, nil
+	if len(meetup.JoinedPersons) == 0 {
+		meetup.JoinedPersons = []entity.JoinedPerson{}
+	}
+	if !isOrganizerOrParticipant {
+		// Clear the JoinedPersons slice and Cancelled fields if the user isn't an organizer or participant
+		meetup.JoinedPersons = nil
+		meetup.CancelledReason = nil
+		meetup.CancelledAt = nil
+	}
+	return meetup, err
 }
 
 // UpdateMeetup implements Service.
@@ -231,7 +232,7 @@ func (s *service) UpdateMeetup(ctx context.Context, meetupID int, req entity.Upd
 
 func (s *service) CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) (*entity.CancelMeetupResponse, error) {
 	// get existing meetup
-	meetup, err := s.GetMeetup(ctx, meetupID)
+	meetup, err := s.GetMeetup(ctx, meetupID, 1) // TODO: userID
 	if err != nil {
 		return nil, err
 	}
