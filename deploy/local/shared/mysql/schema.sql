@@ -98,6 +98,6 @@ CREATE TABLE IF NOT EXISTS meetup_user (
   user_id INT NOT NULL,
   joined_at BIGINT NOT NULL,
   PRIMARY KEY (meetup_id, user_id),
-  FOREIGN KEY (meetup_id) REFERENCES meetup(id),
-  FOREIGN KEY (user_id) REFERENCES user(id)
+  FOREIGN KEY (meetup_id) REFERENCES meetup(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE ON UPDATE CASCADE
 );
