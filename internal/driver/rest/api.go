@@ -99,6 +99,7 @@ func (a *API) GetHandler() http.Handler {
 			r.Get("/", a.serveGetMeetups)
 			r.Route("/{meetup_id}", func(r chi.Router) {
 				r.Get("/", a.serveGetMeetup)
+				r.Put("/", a.serveUpdateMeetup)
 				r.Get("/scenario", a.serveGetScenario)
 				r.Route("/battle", func(r chi.Router) {
 					r.Put("/", a.serveStartBattle)
@@ -448,6 +449,41 @@ func (a *API) serveGetMeetup(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, NewSuccessResp(meetup))
 }
 
+func (a *API) serveUpdateMeetup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := UserFromContext(r.Context())
+
+	meetupID, err := strconv.Atoi(chi.URLParam(r, "meetup_id"))
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+
+	var rb updateMeetupReqBody
+	err = json.NewDecoder(r.Body).Decode(&rb)
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+	err = rb.Validate()
+	if err != nil {
+		render.Render(w, r, NewErrorResp(err))
+		return
+	}
+	meetup, err := a.meetupService.UpdateMeetup(ctx, meetupID, entity.UpdateMeetupRequest{
+		Name:       rb.Name,
+		StartTs:    rb.StartTs,
+		EndTs:      rb.EndTs,
+		MaxPersons: rb.MaxPersons,
+		UserID:     userID,
+	})
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(meetup))
+}
+
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 	switch err {
 	case battle.ErrGameNotFound:
@@ -470,6 +506,10 @@ func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		err = NewExceedVenueCapacityError()
 	case meetup.ErrVenueIsClosed:
 		err = NewVenueIsClosedError()
+	case meetup.ErrForbidden:
+		err = NewForbiddenError()
+	case meetup.ErrMaxPersonsLessThanJoinedPersons:
+		err = NewMaxPersonsLessThanJoinedPersonsError()
 	default:
 		err = NewInternalServerError(err.Error())
 	}

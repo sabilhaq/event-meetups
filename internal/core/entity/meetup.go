@@ -87,11 +87,11 @@ type GetMeetupsResponse struct {
 }
 
 type UpdateMeetupRequest struct {
-	ID         string
 	Name       string
-	StartTs    int
-	EndTs      int
+	StartTs    int64
+	EndTs      int64
 	MaxPersons int
+	UserID     int
 }
 
 type CancelMeetupResponse struct {

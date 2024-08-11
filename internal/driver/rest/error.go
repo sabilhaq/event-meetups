@@ -127,3 +127,11 @@ func NewVenueIsClosedError() *Error {
 		Message:    "venue is closed on the designated meetup time",
 	}
 }
+
+func NewMaxPersonsLessThanJoinedPersonsError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_MAX_PERSONS_LESS_THAN_JOINED_PERSONS",
+		Message:    "max persons is less than number of joined persons",
+	}
+}
