@@ -107,6 +107,7 @@ func (a *API) GetHandler() http.Handler {
 		r.Route("/incoming-meetups", func(r chi.Router) {
 			r.Route("/{meetup_id}", func(r chi.Router) {
 				r.Put("/", a.serveJoinMeetup)
+				r.Delete("/", a.serveLeaveMeetup)
 			})
 		})
 	})
@@ -525,6 +526,24 @@ func (a *API) serveJoinMeetup(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, NewSuccessResp(meetup))
 }
 
+func (a *API) serveLeaveMeetup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := UserFromContext(r.Context())
+
+	meetupID, err := strconv.Atoi(chi.URLParam(r, "meetup_id"))
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+
+	err = a.meetupService.LeaveMeetup(ctx, meetupID, userID)
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(nil))
+}
+
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 	switch err {
 	case battle.ErrGameNotFound:
@@ -563,6 +582,8 @@ func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		err = NewMeetupClosedError()
 	case meetup.ErrMeetupOverlaps:
 		err = NewMeetupOverlapsError()
+	case meetup.ErrUserNotParticipant:
+		err = NewUserNotParticipantError()
 	default:
 		err = NewInternalServerError(err.Error())
 	}

@@ -56,4 +56,10 @@ type UserStorage interface {
 
 	// JoinMeetup insert a row to table meetup_user
 	JoinMeetup(ctx context.Context, meetupUser entity.MeetupUser) error
+
+	// LeaveMeetup delete a row from table meetup_user
+	LeaveMeetup(ctx context.Context, meetupID, userID int) error
+
+	// CountMeetupUser checks is user joined to a meetup
+	CountMeetupUser(ctx context.Context, meetupID, userID int) (int, error)
 }

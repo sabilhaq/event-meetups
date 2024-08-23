@@ -15,29 +15,6 @@ type Storage struct {
 	sqlClient *sqlx.DB
 }
 
-// JoinMeetup implements meetup.UserStorage.
-func (s *Storage) JoinMeetup(ctx context.Context, meetupUser entity.MeetupUser) error {
-	meetupUserRow := shared.NewMeetupUserRow(&meetupUser)
-	query := `
-		REPLACE INTO meetup_user (
-			meetup_id, user_id, joined_at
-		) VALUES (
-			:meetup_id, :user_id, :joined_at
-		)
-	`
-
-	_, err := s.sqlClient.NamedExecContext(ctx, query, map[string]interface{}{
-		"meetup_id": meetupUserRow.MeetupID,
-		"user_id":   meetupUserRow.UserID,
-		"joined_at": meetupUserRow.JoinedAt,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to execute query due: %w", err)
-	}
-
-	return err
-}
-
 type Config struct {
 	SQLClient *sqlx.DB `validate:"nonnil"`
 }
@@ -101,4 +78,58 @@ func (s *Storage) GetUserByID(ctx context.Context, id int) (*entity.User, error)
 	}
 
 	return user.ToUser(), nil
+}
+
+// JoinMeetup implements meetup.UserStorage.
+func (s *Storage) JoinMeetup(ctx context.Context, meetupUser entity.MeetupUser) error {
+	meetupUserRow := shared.NewMeetupUserRow(&meetupUser)
+	query := `
+		REPLACE INTO meetup_user (
+			meetup_id, user_id, joined_at
+		) VALUES (
+			:meetup_id, :user_id, :joined_at
+		)
+	`
+
+	_, err := s.sqlClient.NamedExecContext(ctx, query, map[string]interface{}{
+		"meetup_id": meetupUserRow.MeetupID,
+		"user_id":   meetupUserRow.UserID,
+		"joined_at": meetupUserRow.JoinedAt,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to execute query due: %w", err)
+	}
+
+	return err
+}
+
+// CountMeetupUser implements meetup.UserStorage.
+func (s *Storage) CountMeetupUser(ctx context.Context, meetupID int, userID int) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM meetup_user
+		WHERE meetup_id = ? AND user_id = ?
+	`
+
+	if err := s.sqlClient.GetContext(ctx, &count, query, meetupID, userID); err != nil {
+		return 0, fmt.Errorf("unable to find supported event with meetup id %d and user id %d: %v", meetupID, userID, err)
+	}
+
+	return count, nil
+}
+
+// LeaveMeetup implements meetup.UserStorage.
+func (s *Storage) LeaveMeetup(ctx context.Context, meetupID, userID int) error {
+	query := `
+		DELETE FROM meetup_user
+		WHERE meetup_id = ? AND user_id = ?
+	`
+
+	_, err := s.sqlClient.ExecContext(ctx, query, meetupID, userID)
+	if err != nil {
+		return fmt.Errorf("unable to execute query due: %w", err)
+	}
+
+	return err
 }

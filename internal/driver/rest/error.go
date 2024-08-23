@@ -183,3 +183,11 @@ func NewMeetupOverlapsError() *Error {
 		Message:    "Meetup overlaps with other meetup that user already joined",
 	}
 }
+
+func NewUserNotParticipantError() *Error {
+	return &Error{
+		StatusCode: http.StatusForbidden,
+		Err:        "ERR_USER_NOT_PARTICIPANT",
+		Message:    "User is not a participant",
+	}
+}

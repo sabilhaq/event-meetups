@@ -23,6 +23,7 @@ var (
 	ErrMeetupCancelled                 = errors.New("Meetup is cancelled")
 	ErrMeetupClosed                    = errors.New("Meetup is closed")
 	ErrMeetupOverlaps                  = errors.New("Meetup overlaps with other meetup that user already joined")
+	ErrUserNotParticipant              = errors.New("User is not a participant")
 )
 
 type Service interface {
@@ -56,7 +57,7 @@ type Service interface {
 
 	// LeaveMeetup is used to leave a meetup. User can only leave a meetup if he/she already
 	// joined the meetup, also the meetup is not cancelled or finished yet.
-	LeaveMeetup(ctx context.Context, meetupID int) error
+	LeaveMeetup(ctx context.Context, meetupID int, userID int) error
 
 	// GetIncomingMeetups is used to list future meetups that are joined by a user. The returned meetup
 	// statuses are either open or cancelled.
@@ -447,8 +448,46 @@ func (s *service) JoinMeetup(ctx context.Context, meetupID int, userID int) (*en
 }
 
 // LeaveMeetup implements Service.
-func (s *service) LeaveMeetup(ctx context.Context, meetupID int) error {
-	panic("unimplemented")
+func (s *service) LeaveMeetup(ctx context.Context, meetupID int, userID int) error {
+	meetup, _, err := s.meetupStorage.GetMeetup(ctx, meetupID, userID)
+	if err != nil {
+		return fmt.Errorf("unable to get meetup due: %w", err)
+	}
+	if meetup == nil {
+		return ErrMeetupNotFound
+	}
+
+	venue, err := s.venueStorage.GetVenue(ctx, meetup.Venue.ID)
+	if err != nil {
+		return fmt.Errorf("unable to get existing meetups count due: %w", err)
+	}
+	loc, err := time.LoadLocation(venue.Timezone)
+	if err != nil {
+		return fmt.Errorf("failed to load location: %v", err)
+	}
+	endTime := time.Unix(meetup.EndTs, 0).In(loc)
+	if time.Now().After(endTime) || time.Now().Equal(endTime) {
+		return ErrMeetupFinished
+	}
+
+	if meetup.Status == entity.StatusCancelled {
+		return ErrMeetupCancelled
+	}
+
+	count, err := s.userStorage.CountMeetupUser(ctx, meetup.ID, userID)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return ErrUserNotParticipant
+	}
+
+	err = s.userStorage.LeaveMeetup(ctx, meetup.ID, userID)
+	if err != nil {
+		return fmt.Errorf("unable to leave meetup due: %w", err)
+	}
+
+	return nil
 }
 
 func (s *service) GetIncomingMeetups(ctx context.Context) ([]entity.Meetup, error) {
