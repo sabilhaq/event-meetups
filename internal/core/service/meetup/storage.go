@@ -24,6 +24,9 @@ type MeetupStorage interface {
 
 	// CancelMeetup is used to update meetup status to cancelled in storage.
 	CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) error
+
+	// CountOverlappingMeetups is used to count overlapping meetup given userID, startTs, and endTs from storage.
+	CountOverlappingMeetups(ctx context.Context, userID int, startTs, endTs int64) (int, error)
 }
 
 type VenueStorage interface {
@@ -50,4 +53,7 @@ type UserStorage interface {
 	// GetUserByID returns user instance for given userID from storage. Returns nil
 	// when given userID is not found in database.
 	GetUserByID(ctx context.Context, userID int) (*entity.User, error)
+
+	// JoinMeetup insert a row to table meetup_user
+	JoinMeetup(ctx context.Context, meetupUser entity.MeetupUser) error
 }

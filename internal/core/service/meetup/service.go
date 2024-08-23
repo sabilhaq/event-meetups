@@ -19,6 +19,10 @@ var (
 	ErrMaxPersonsLessThanJoinedPersons = errors.New("max persons is less than number of joined persons")
 	ErrCancelledReasonRequred          = errors.New("Cancelled reason is required")
 	ErrMeetupStarted                   = errors.New("Meetup is started")
+	ErrMeetupFinished                  = errors.New("Meetup is finished")
+	ErrMeetupCancelled                 = errors.New("Meetup is cancelled")
+	ErrMeetupClosed                    = errors.New("Meetup is closed")
+	ErrMeetupOverlaps                  = errors.New("Meetup overlaps with other meetup that user already joined")
 )
 
 type Service interface {
@@ -48,7 +52,7 @@ type Service interface {
 
 	// JoinMeetup is used to join a meetup. User can only join a meetup if the meetup is still open
 	// which means the meetup hasn't reached the maximum number of persons, not cancelled, and not finished yet.
-	JoinMeetup(ctx context.Context, meetupID int) (*entity.Meetup, error)
+	JoinMeetup(ctx context.Context, meetupID int, userID int) (*entity.Meetup, error)
 
 	// LeaveMeetup is used to leave a meetup. User can only leave a meetup if he/she already
 	// joined the meetup, also the meetup is not cancelled or finished yet.
@@ -388,8 +392,58 @@ func (s *service) CancelMeetup(ctx context.Context, meetupID int, userID int, ca
 }
 
 // JoinMeetup implements Service.
-func (s *service) JoinMeetup(ctx context.Context, meetupID int) (*entity.Meetup, error) {
-	panic("unimplemented")
+func (s *service) JoinMeetup(ctx context.Context, meetupID int, userID int) (*entity.Meetup, error) {
+	meetup, _, err := s.meetupStorage.GetMeetup(ctx, meetupID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get meetup due: %w", err)
+	}
+	if meetup == nil {
+		return nil, ErrMeetupNotFound
+	}
+
+	venue, err := s.venueStorage.GetVenue(ctx, meetup.Venue.ID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get existing meetups count due: %w", err)
+	}
+	loc, err := time.LoadLocation(venue.Timezone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load location: %v", err)
+	}
+	endTime := time.Unix(meetup.EndTs, 0).In(loc)
+	if time.Now().After(endTime) || time.Now().Equal(endTime) {
+		return nil, ErrMeetupFinished
+	}
+
+	if meetup.Status == entity.StatusCancelled {
+		return nil, ErrMeetupCancelled
+	}
+
+	if meetup.JoinedPersonsCount == meetup.MaxPersons {
+		return nil, ErrMeetupClosed
+	}
+
+	overlapCount, err := s.meetupStorage.CountOverlappingMeetups(ctx, userID, meetup.StartTs, meetup.EndTs)
+	if err != nil {
+		return nil, err
+	}
+	if overlapCount > 0 {
+		return nil, ErrMeetupOverlaps
+	}
+
+	err = s.userStorage.JoinMeetup(ctx, entity.MeetupUser{
+		MeetupID: meetup.ID,
+		UserID:   userID,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to join meetup due: %w", err)
+	}
+
+	meetup, _, err = s.meetupStorage.GetMeetup(ctx, meetupID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get meetup due: %w", err)
+	}
+
+	return meetup, nil
 }
 
 // LeaveMeetup implements Service.

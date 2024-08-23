@@ -131,3 +131,9 @@ func NewMeetup(cfg MeetupConfig) (*Meetup, error) {
 	}
 	return m, nil
 }
+
+type MeetupUser struct {
+	MeetupID int
+	UserID   int
+	JoinedAt int64
+}

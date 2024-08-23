@@ -243,3 +243,24 @@ func (s *Storage) CancelMeetup(ctx context.Context, meetupID int, cancelledReaso
 
 	return err
 }
+
+// CountOverlappingMeetups implements meetup.MeetupStorage.
+func (s *Storage) CountOverlappingMeetups(ctx context.Context, userID int, startTs, endTs int64) (int, error) {
+	var count int
+	query := `
+		SELECT COUNT(*)
+		FROM meetup_user mu
+		JOIN meetup m ON mu.meetup_id = m.id
+		WHERE mu.user_id = ?
+		AND m.start_ts < ? AND m.end_ts > ?
+	`
+
+	if err := s.sqlClient.GetContext(ctx, &count, query, userID, endTs, startTs); err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("unable to find meetup with user_id %d, start_ts %d, end_ts %d, : %v", userID, startTs, endTs, err)
+	}
+
+	return count, nil
+}

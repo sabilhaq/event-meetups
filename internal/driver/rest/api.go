@@ -103,6 +103,12 @@ func (a *API) GetHandler() http.Handler {
 				r.Delete("/", a.serveCancelMeetup)
 			})
 		})
+
+		r.Route("/incoming-meetups", func(r chi.Router) {
+			r.Route("/{meetup_id}", func(r chi.Router) {
+				r.Put("/", a.serveJoinMeetup)
+			})
+		})
 	})
 
 	r.Route("/games", func(r chi.Router) {
@@ -501,6 +507,24 @@ func (a *API) serveCancelMeetup(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, NewSuccessResp(meetup))
 }
 
+func (a *API) serveJoinMeetup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := UserFromContext(r.Context())
+
+	meetupID, err := strconv.Atoi(chi.URLParam(r, "meetup_id"))
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+
+	meetup, err := a.meetupService.JoinMeetup(ctx, meetupID, userID)
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(meetup))
+}
+
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 	switch err {
 	case battle.ErrGameNotFound:
@@ -531,6 +555,14 @@ func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		err = NewCancelledReasonRequiredError()
 	case meetup.ErrMeetupStarted:
 		err = NewMeetupStartedError()
+	case meetup.ErrMeetupFinished:
+		err = NewMeetupFinishedError()
+	case meetup.ErrMeetupCancelled:
+		err = NewMeetupCancelledError()
+	case meetup.ErrMeetupClosed:
+		err = NewMeetupClosedError()
+	case meetup.ErrMeetupOverlaps:
+		err = NewMeetupOverlapsError()
 	default:
 		err = NewInternalServerError(err.Error())
 	}

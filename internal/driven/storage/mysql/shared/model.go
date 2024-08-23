@@ -3,6 +3,7 @@ package shared
 import (
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Haraj-backend/hex-monscape/internal/core/entity"
 )
@@ -166,4 +167,19 @@ func (r VenueEventRows) ToVenues() []entity.Venue {
 		venues = append(venues, *venue)
 	}
 	return venues
+}
+
+type MeetupUserRow struct {
+	MeetupID int   `db:"meetup_id"`
+	UserID   int   `db:"user_id"`
+	JoinedAt int64 `db:"joined_at"`
+}
+
+func NewMeetupUserRow(meetup *entity.MeetupUser) *MeetupUserRow {
+	now := time.Now().Unix()
+	return &MeetupUserRow{
+		MeetupID: meetup.MeetupID,
+		UserID:   meetup.UserID,
+		JoinedAt: now,
+	}
 }

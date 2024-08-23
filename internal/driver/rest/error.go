@@ -151,3 +151,35 @@ func NewMeetupStartedError() *Error {
 		Message:    "Meetup is started",
 	}
 }
+
+func NewMeetupFinishedError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_MEETUP_FINISHED",
+		Message:    "Meetup is finished",
+	}
+}
+
+func NewMeetupCancelledError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_MEETUP_CANCELLED",
+		Message:    "Meetup is cancelled",
+	}
+}
+
+func NewMeetupClosedError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_MEETUP_CLOSED",
+		Message:    "Meetup is closed",
+	}
+}
+
+func NewMeetupOverlapsError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_MEETUP_OVERLAPS",
+		Message:    "Meetup overlaps with other meetup that user already joined",
+	}
+}
