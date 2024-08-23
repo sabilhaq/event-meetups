@@ -4,6 +4,10 @@ import (
 	"gopkg.in/validator.v2"
 )
 
+const (
+	StatusCancelled = "cancelled"
+)
+
 type MeetupConfig struct {
 	Name        string `validate:"nonzero"`
 	VenueID     int    `validate:"nonzero"`

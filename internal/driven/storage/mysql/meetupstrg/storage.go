@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Haraj-backend/hex-monscape/internal/core/entity"
 	"github.com/jmoiron/sqlx"
@@ -219,5 +220,26 @@ func (s *Storage) GetMeetup(ctx context.Context, meetupID, userID int) (*entity.
 
 // CancelMeetup implements meetup.MeetupStorage.
 func (s *Storage) CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) error {
-	panic("unimplemented")
+	query := `
+		UPDATE meetup 
+		SET 
+			status = :status, 
+			cancelled_reason = :cancelled_reason, 
+			cancelled_at = :cancelled_at, 
+			updated_at = :updated_at
+		WHERE id = :id
+	`
+
+	_, err := s.sqlClient.NamedExecContext(ctx, query, map[string]interface{}{
+		"id":               meetupID,
+		"status":           entity.StatusCancelled,
+		"cancelled_reason": cancelledReason,
+		"cancelled_at":     time.Now().Unix(),
+		"updated_at":       time.Now().Unix(),
+	})
+	if err != nil {
+		return fmt.Errorf("unable to execute query due: %w", err)
+	}
+
+	return err
 }

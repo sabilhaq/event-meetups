@@ -17,6 +17,8 @@ var (
 	ErrVenueIsClosed                   = errors.New("venue is closed on the designated meetup time")
 	ErrForbidden                       = errors.New("user is not authorized to access this resource")
 	ErrMaxPersonsLessThanJoinedPersons = errors.New("max persons is less than number of joined persons")
+	ErrCancelledReasonRequred          = errors.New("Cancelled reason is required")
+	ErrMeetupStarted                   = errors.New("Meetup is started")
 )
 
 type Service interface {
@@ -42,7 +44,7 @@ type Service interface {
 
 	// CancelMeetup is used to cancel a meetup. Only the organizer of the meetup can cancel the meetup.
 	// Meetup can only be cancelled if it isn't started yet.
-	CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) (*entity.CancelMeetupResponse, error)
+	CancelMeetup(ctx context.Context, meetupID int, userID int, cancelledReason string) (*entity.CancelMeetupResponse, error)
 
 	// JoinMeetup is used to join a meetup. User can only join a meetup if the meetup is still open
 	// which means the meetup hasn't reached the maximum number of persons, not cancelled, and not finished yet.
@@ -330,18 +332,46 @@ func (s *service) UpdateMeetup(ctx context.Context, meetupID int, req entity.Upd
 	return meetup, nil
 }
 
-func (s *service) CancelMeetup(ctx context.Context, meetupID int, cancelledReason string) (*entity.CancelMeetupResponse, error) {
+func (s *service) CancelMeetup(ctx context.Context, meetupID int, userID int, cancelledReason string) (*entity.CancelMeetupResponse, error) {
 	// get existing meetup
-	meetup, err := s.GetMeetup(ctx, meetupID, 1) // TODO: userID
+	meetup, _, err := s.meetupStorage.GetMeetup(ctx, meetupID, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get meetup due: %w", err)
+	}
+	if meetup == nil {
+		return nil, ErrMeetupNotFound
+	}
+	if meetup.Organizer.ID != userID {
+		return nil, ErrForbidden
 	}
 
-	// delete meetup
+	// check is meetup within venue operating hours
+	venue, err := s.venueStorage.GetVenue(ctx, meetup.Venue.ID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get existing meetups count due: %w", err)
+	}
+
+	// Convert timestamp to the venue's timezone
+	loc, err := time.LoadLocation(venue.Timezone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load location: %v", err)
+	}
+	startTime := time.Unix(meetup.StartTs, 0).In(loc)
+	if time.Now().After(startTime) || time.Now().Equal(startTime) {
+		return nil, ErrMeetupStarted
+	}
+
+	// update meetup status
 	err = s.meetupStorage.CancelMeetup(ctx, meetup.ID, cancelledReason)
 	if err != nil {
 		return nil, fmt.Errorf("unable to delete meetup due: %w", err)
 	}
+
+	meetup, _, err = s.meetupStorage.GetMeetup(ctx, meetupID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get meetup due: %w", err)
+	}
+
 	return &entity.CancelMeetupResponse{
 		ID:              meetup.ID,
 		Name:            meetup.Name,
@@ -352,8 +382,8 @@ func (s *service) CancelMeetup(ctx context.Context, meetupID int, cancelledReaso
 		MaxPersons:      meetup.MaxPersons,
 		Organizer:       meetup.Organizer,
 		Status:          meetup.Status,
-		CancelledReason: cancelledReason,
-		CancelledAt:     time.Now().Unix(), // TODO: make relation between meetup and meetup_cancelled_reason
+		CancelledReason: *meetup.CancelledReason,
+		CancelledAt:     *meetup.CancelledAt,
 	}, nil
 }
 

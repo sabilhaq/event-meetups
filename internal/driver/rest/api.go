@@ -100,14 +100,7 @@ func (a *API) GetHandler() http.Handler {
 			r.Route("/{meetup_id}", func(r chi.Router) {
 				r.Get("/", a.serveGetMeetup)
 				r.Put("/", a.serveUpdateMeetup)
-				r.Get("/scenario", a.serveGetScenario)
-				r.Route("/battle", func(r chi.Router) {
-					r.Put("/", a.serveStartBattle)
-					r.Get("/", a.serveGetBattleInfo)
-					r.Put("/turn", a.serveDecideTurn)
-					r.Put("/attack", a.serveAttack)
-					r.Put("/surrender", a.serveSurrender)
-				})
+				r.Delete("/", a.serveCancelMeetup)
 			})
 		})
 	})
@@ -484,6 +477,30 @@ func (a *API) serveUpdateMeetup(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, NewSuccessResp(meetup))
 }
 
+func (a *API) serveCancelMeetup(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := UserFromContext(r.Context())
+
+	meetupID, err := strconv.Atoi(chi.URLParam(r, "meetup_id"))
+	if err != nil {
+		render.Render(w, r, NewErrorResp(NewBadRequestError(err.Error())))
+		return
+	}
+
+	cancelledReason := r.URL.Query().Get("cancelled_reason")
+	if cancelledReason == "" {
+		render.Render(w, r, NewErrorResp(NewCancelledReasonRequiredError()))
+		return
+	}
+
+	meetup, err := a.meetupService.CancelMeetup(ctx, meetupID, userID, cancelledReason)
+	if err != nil {
+		handleServiceError(w, r, err)
+		return
+	}
+	render.Render(w, r, NewSuccessResp(meetup))
+}
+
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 	switch err {
 	case battle.ErrGameNotFound:
@@ -510,6 +527,10 @@ func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {
 		err = NewForbiddenError()
 	case meetup.ErrMaxPersonsLessThanJoinedPersons:
 		err = NewMaxPersonsLessThanJoinedPersonsError()
+	case meetup.ErrCancelledReasonRequred:
+		err = NewCancelledReasonRequiredError()
+	case meetup.ErrMeetupStarted:
+		err = NewMeetupStartedError()
 	default:
 		err = NewInternalServerError(err.Error())
 	}

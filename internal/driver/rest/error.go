@@ -135,3 +135,19 @@ func NewMaxPersonsLessThanJoinedPersonsError() *Error {
 		Message:    "max persons is less than number of joined persons",
 	}
 }
+
+func NewCancelledReasonRequiredError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_CANCELLED_REASON_REQUIRED",
+		Message:    "Cancelled reason is required",
+	}
+}
+
+func NewMeetupStartedError() *Error {
+	return &Error{
+		StatusCode: http.StatusConflict,
+		Err:        "ERR_MEETUP_STARTED",
+		Message:    "Meetup is started",
+	}
+}
