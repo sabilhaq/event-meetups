@@ -264,3 +264,123 @@ func (s *Storage) CountOverlappingMeetups(ctx context.Context, userID int, start
 
 	return count, nil
 }
+
+// GetIncomingMeetups implements meetup.MeetupStorage.
+func (s *Storage) GetIncomingMeetups(ctx context.Context, filter entity.GetIncomingMeetupFilter) ([]entity.Meetup, error) {
+	var rows MeetupJoinVenueEventUserRows
+	args := []interface{}{}
+	queryBuilder := strings.Builder{}
+
+	queryBuilder.WriteString(`
+		SELECT
+			m.id,
+			m.name,
+			v.id AS "venue.id",
+			v.name AS "venue.name",
+			e.id AS "event.id",
+			e.name AS "event.name",
+			m.start_ts,
+			m.end_ts,
+			m.max_persons,
+			u.id AS "organizer.id",
+			u.username AS "organizer.username",
+			u.email AS "organizer.email",
+			(SELECT COUNT(*) FROM meetup_user mu WHERE mu.meetup_id = m.id) AS joined_persons_count,
+			EXISTS (SELECT 1 FROM meetup_user mu WHERE mu.meetup_id = m.id AND mu.user_id = ?) AS is_joined,
+			m.status
+		FROM meetup_user mu
+		JOIN meetup m ON mu.meetup_id = m.id
+		JOIN venue v ON m.venue_id = v.id
+		JOIN event e ON m.event_id = e.id
+		JOIN user u ON m.organizer_id = u.id
+	`)
+
+	args = append(args, filter.UserID)
+
+	conditions := []string{}
+
+	if filter.UserID != 0 {
+		conditions = append(conditions, "mu.user_id = ?")
+		args = append(args, filter.UserID)
+	}
+
+	if filter.Status != "" {
+		if filter.Status == "all" {
+			conditions = append(conditions, "(m.status = ? OR m.status = ?)")
+			args = append(args, "open", "cancelled")
+		} else {
+			conditions = append(conditions, "m.status = ?")
+			args = append(args, filter.Status)
+		}
+	}
+
+	if filter.EventIDs != nil {
+		eventIDs := strings.Split(*filter.EventIDs, ",")
+		query, argsIn, err := sqlx.In("event_id IN (?)", eventIDs)
+		if err != nil {
+			return nil, err
+		}
+		query = s.sqlClient.Rebind(query)
+		conditions = append(conditions, query)
+		args = append(args, argsIn...)
+	}
+
+	if filter.VenueIDs != nil {
+		venueIDs := strings.Split(*filter.VenueIDs, ",")
+		query, argsIn, err := sqlx.In("venue_id IN (?)", venueIDs)
+		if err != nil {
+			return nil, err
+		}
+		query = s.sqlClient.Rebind(query)
+		conditions = append(conditions, query)
+		args = append(args, argsIn...)
+	}
+
+	// Combine conditions with AND
+	if len(conditions) > 0 {
+		queryBuilder.WriteString(" WHERE ")
+		queryBuilder.WriteString(strings.Join(conditions, " AND "))
+	}
+
+	queryBuilder.WriteString(" ORDER BY m.start_ts ASC ")
+
+	// Finalize the query
+	query := queryBuilder.String()
+
+	if err := s.sqlClient.SelectContext(ctx, &rows, query, args...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("unable to execute query due: %w", err)
+	}
+
+	// get joined_persons
+	for i, meetup := range rows {
+		var joinedPersons []JoinedPerson
+
+		// Define the query for joined persons
+		joinedPersonsQuery := `
+			SELECT 
+				u.id, u.username, u.email, mu.joined_at 
+			FROM meetup_user mu 
+			JOIN user u ON mu.user_id = u.id 
+			WHERE mu.meetup_id = ?
+		`
+
+		// Execute the query for joined persons
+		if err := s.sqlClient.SelectContext(ctx, &joinedPersons, joinedPersonsQuery, meetup.ID); err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("unable to execute query due: %w", err)
+		}
+
+		// Ensure that `joined_persons` appears as an empty array if there are no joined persons
+		if len(joinedPersons) == 0 {
+			joinedPersons = []JoinedPerson{}
+		}
+		rows[i].JoinedPersons = joinedPersons
+	}
+
+	return rows.ToMeetups(), nil
+}

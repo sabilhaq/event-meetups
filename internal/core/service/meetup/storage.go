@@ -27,6 +27,9 @@ type MeetupStorage interface {
 
 	// CountOverlappingMeetups is used to count overlapping meetup given userID, startTs, and endTs from storage.
 	CountOverlappingMeetups(ctx context.Context, userID int, startTs, endTs int64) (int, error)
+
+	// GetIncomingMeetups returns list of future meetups that are joined by a user.
+	GetIncomingMeetups(ctx context.Context, filter entity.GetIncomingMeetupFilter) ([]entity.Meetup, error)
 }
 
 type VenueStorage interface {

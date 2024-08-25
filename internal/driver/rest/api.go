@@ -105,6 +105,7 @@ func (a *API) GetHandler() http.Handler {
 		})
 
 		r.Route("/incoming-meetups", func(r chi.Router) {
+			r.Get("/", a.serveGetIncomingMeetups)
 			r.Route("/{meetup_id}", func(r chi.Router) {
 				r.Put("/", a.serveJoinMeetup)
 				r.Delete("/", a.serveLeaveMeetup)
@@ -542,6 +543,44 @@ func (a *API) serveLeaveMeetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	render.Render(w, r, NewSuccessResp(nil))
+}
+
+func (a *API) serveGetIncomingMeetups(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userID := UserFromContext(r.Context())
+	filter := entity.GetIncomingMeetupFilter{}
+	filter.UserID = userID
+
+	filter.Status = r.URL.Query().Get("status")
+	if filter.Status == "" {
+		filter.Status = "all"
+	}
+	if filter.Status != "all" && filter.Status != "open" && filter.Status != "cancelled" {
+		render.Render(w, r, NewErrorResp(NewBadRequestError("status: invalid status")))
+		return
+	}
+
+	eventIDs := r.URL.Query().Get("event_ids")
+	if eventIDs != "" {
+		filter.EventIDs = &eventIDs
+	}
+
+	venueIDs := r.URL.Query().Get("venue_ids")
+	if venueIDs != "" {
+		filter.VenueIDs = &venueIDs
+	}
+
+	meetups, err := a.meetupService.GetIncomingMeetups(ctx, entity.GetIncomingMeetupFilter{
+		UserID:   filter.UserID,
+		EventIDs: filter.EventIDs,
+		VenueIDs: filter.VenueIDs,
+		Status:   filter.Status,
+	})
+	if err != nil {
+		render.Render(w, r, NewErrorResp(err))
+		return
+	}
+	render.Render(w, r, NewSuccessResp(meetups))
 }
 
 func handleServiceError(w http.ResponseWriter, r *http.Request, err error) {

@@ -137,3 +137,10 @@ type MeetupUser struct {
 	UserID   int
 	JoinedAt int64
 }
+
+type GetIncomingMeetupFilter struct {
+	UserID   int
+	EventIDs *string
+	VenueIDs *string
+	Status   string
+}

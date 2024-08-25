@@ -61,7 +61,7 @@ type Service interface {
 
 	// GetIncomingMeetups is used to list future meetups that are joined by a user. The returned meetup
 	// statuses are either open or cancelled.
-	GetIncomingMeetups(ctx context.Context) ([]entity.Meetup, error)
+	GetIncomingMeetups(ctx context.Context, filter entity.GetIncomingMeetupFilter) ([]entity.Meetup, error)
 }
 
 type service struct {
@@ -490,13 +490,10 @@ func (s *service) LeaveMeetup(ctx context.Context, meetupID int, userID int) err
 	return nil
 }
 
-func (s *service) GetIncomingMeetups(ctx context.Context) ([]entity.Meetup, error) {
-	// TODO: validation
-	//
-
-	meetups, err := s.meetupStorage.GetMeetups(ctx, entity.GetMeetupFilter{})
+func (s *service) GetIncomingMeetups(ctx context.Context, filter entity.GetIncomingMeetupFilter) ([]entity.Meetup, error) {
+	meetups, err := s.meetupStorage.GetIncomingMeetups(ctx, filter)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get available meetups due: %w", err)
+		return nil, fmt.Errorf("unable to get incoming meetups due: %w", err)
 	}
 	return meetups, nil
 }
