@@ -30,6 +30,9 @@ type MeetupStorage interface {
 
 	// GetIncomingMeetups returns list of future meetups that are joined by a user.
 	GetIncomingMeetups(ctx context.Context, filter entity.GetIncomingMeetupFilter) ([]entity.Meetup, error)
+
+	// GetJoinedPersons returns list of persons that joined a meetup.
+	GetJoinedPersons(ctx context.Context, meetupID int) ([]entity.JoinedPerson, error)
 }
 
 type VenueStorage interface {
@@ -65,4 +68,14 @@ type UserStorage interface {
 
 	// CountMeetupUser checks is user joined to a meetup
 	CountMeetupUser(ctx context.Context, meetupID, userID int) (int, error)
+}
+
+type EmailStorage interface {
+	// SendCancellationEmail send notification to the email of all joined persons of the meetup.
+	// This notification will contains information about the reason of the meetup cancellation
+	SendCancellationEmail(toEmails []string, cancelledReason string) error
+
+	// NotifyOrganizer send notification to the meetup organizer.
+	// This notification is simply contains the information about the user that just joined the meetup and the latest total number of joined persons in the meetup.
+	NotifyOrganizer(organizerEmail, username string, joinedCount int) error
 }

@@ -69,6 +69,7 @@ type service struct {
 	venueStorage  VenueStorage
 	eventStorage  EventStorage
 	userStorage   UserStorage
+	emailStorage  EmailStorage
 }
 
 func (s *service) CreateMeetup(ctx context.Context, req entity.CreateMeetupRequest) (*entity.Meetup, error) {
@@ -366,15 +367,33 @@ func (s *service) CancelMeetup(ctx context.Context, meetupID int, userID int, ca
 		return nil, ErrMeetupStarted
 	}
 
-	// update meetup status
+	// update meetup status to cancelled
 	err = s.meetupStorage.CancelMeetup(ctx, meetup.ID, cancelledReason)
 	if err != nil {
-		return nil, fmt.Errorf("unable to delete meetup due: %w", err)
+		return nil, fmt.Errorf("unable to cancel meetup due: %w", err)
 	}
 
 	meetup, _, err = s.meetupStorage.GetMeetup(ctx, meetupID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get meetup due: %w", err)
+	}
+
+	// Get emails of all joined persons
+	joinedPersons, err := s.meetupStorage.GetJoinedPersons(ctx, meetup.ID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get joined persons due: %w", err)
+	}
+
+	var emails []string
+	for _, user := range joinedPersons {
+		emails = append(emails, user.Email)
+	}
+
+	// Send cancellation email
+	if len(emails) > 0 {
+		if err := s.emailStorage.SendCancellationEmail(emails, cancelledReason); err != nil {
+			return nil, fmt.Errorf("unable to send emails due: %w", err)
+		}
 	}
 
 	return &entity.CancelMeetupResponse{
@@ -444,6 +463,16 @@ func (s *service) JoinMeetup(ctx context.Context, meetupID int, userID int) (*en
 		return nil, fmt.Errorf("unable to get meetup due: %w", err)
 	}
 
+	user, err := s.userStorage.GetUserByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get user due: %w", err)
+	}
+
+	// Send notification to the meetup organizer
+	if err := s.emailStorage.NotifyOrganizer(meetup.Organizer.Email, user.Username, len(meetup.JoinedPersons)); err != nil {
+		return nil, fmt.Errorf("unable to send emails due: %w", err)
+	}
+
 	return meetup, nil
 }
 
@@ -503,6 +532,7 @@ type ServiceConfig struct {
 	VenueStorage  VenueStorage  `validate:"nonnil"`
 	EventStorage  EventStorage  `validate:"nonnil"`
 	UserStorage   UserStorage   `validate:"nonnil"`
+	EmailStorage  EmailStorage  `validate:"nonnil"`
 }
 
 func (c ServiceConfig) Validate() error {
@@ -520,6 +550,7 @@ func NewService(cfg ServiceConfig) (Service, error) {
 		venueStorage:  cfg.VenueStorage,
 		eventStorage:  cfg.EventStorage,
 		userStorage:   cfg.UserStorage,
+		emailStorage:  cfg.EmailStorage,
 	}
 	return s, nil
 }

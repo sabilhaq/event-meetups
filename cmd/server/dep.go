@@ -16,6 +16,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	sessionstrg "github.com/Haraj-backend/hex-monscape/internal/driven/rest/token"
+	"github.com/Haraj-backend/hex-monscape/internal/driven/smtp/mailpit"
 
 	membattlestrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/battlestrg"
 	memeventstrg "github.com/Haraj-backend/hex-monscape/internal/driven/storage/memory/eventstrg"
@@ -52,6 +53,7 @@ type storageDeps struct {
 	MeetupVenueStorage    meetup.VenueStorage
 	MeetupEventStorage    meetup.EventStorage
 	MeetupUserStorage     meetup.UserStorage
+	MeetupEmailStorage    meetup.EmailStorage
 }
 
 func initStorageDeps(cfg config) (*storageDeps, error) {
@@ -211,6 +213,15 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		if err != nil {
 			return nil, fmt.Errorf("unable to initialize meetup storage due: %v", err)
 		}
+		// initialize email storage
+		emailStorage, err := mailpit.New(mailpit.Config{
+			Host:      cfg.Storage.SMTP.Host,
+			Port:      cfg.Storage.SMTP.Port,
+			FromEmail: cfg.Storage.SMTP.FromEmail,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to initialize email storage due: %v", err)
+		}
 
 		// set storages
 		deps.BattleGameStorage = gameStorage
@@ -227,6 +238,7 @@ func initStorageDeps(cfg config) (*storageDeps, error) {
 		deps.MeetupVenueStorage = venueStorage
 		deps.MeetupEventStorage = eventStorage
 		deps.MeetupUserStorage = userStorage
+		deps.MeetupEmailStorage = emailStorage
 
 	default:
 		return nil, fmt.Errorf("unknown storage type: %v", cfg.Storage.Type)

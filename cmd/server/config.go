@@ -10,6 +10,7 @@ type storageConfig struct {
 	Memory   storageMemoryConfig   `cfg:"memory"`
 	DynamoDB storageDynamoDBConfig `cfg:"dynamodb"`
 	MySQL    storageMySQLConfig    `cfg:"mysql"`
+	SMTP     storageSMTPConfig     `cfg:"smtp"`
 }
 
 type storageMemoryConfig struct {
@@ -28,6 +29,12 @@ type storageDynamoDBConfig struct {
 
 type storageMySQLConfig struct {
 	SQLDSN string `cfg:"sql_dsn" cfgDefault:"root:password@tcp(localhost:3306)/db_eventmeetup?timeout=5s"`
+}
+
+type storageSMTPConfig struct {
+	Host      string `cfg:"smtp_host" cfgDefault:"localhost"`
+	Port      string `cfg:"smtp_port" cfgDefault:"1025"` // Default port for Mailpit
+	FromEmail string `cfg:"smtp_from_email" cfgDefault:"no-reply@yourdomain.com"`
 }
 
 type storageType string

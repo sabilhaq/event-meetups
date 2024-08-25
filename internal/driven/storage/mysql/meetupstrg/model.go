@@ -110,6 +110,25 @@ func (r *MeetupJoinVenueEventUserRow) ToMeetup() *entity.Meetup {
 	}
 }
 
+type JoinedPersonRows []JoinedPerson
+
+func (r JoinedPersonRows) ToJoinedPersons() []entity.JoinedPerson {
+	var joinedPersons []entity.JoinedPerson
+	for _, row := range r {
+		joinedPersons = append(joinedPersons, *row.ToJoinedPerson())
+	}
+	return joinedPersons
+}
+
+func (r *JoinedPerson) ToJoinedPerson() *entity.JoinedPerson {
+	return &entity.JoinedPerson{
+		ID:       r.ID,
+		Username: r.Username,
+		Email:    r.Email,
+		JoinedAt: r.JoinedAt,
+	}
+}
+
 func (r MeetupJoinVenueEventUserRows) ToMeetups() []entity.Meetup {
 	var meetups []entity.Meetup
 	for _, row := range r {

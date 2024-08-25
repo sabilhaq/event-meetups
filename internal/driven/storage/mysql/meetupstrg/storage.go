@@ -384,3 +384,26 @@ func (s *Storage) GetIncomingMeetups(ctx context.Context, filter entity.GetIncom
 
 	return rows.ToMeetups(), nil
 }
+
+func (s *Storage) GetJoinedPersons(ctx context.Context, meetupID int) ([]entity.JoinedPerson, error) {
+	var rows JoinedPersonRows
+	query := `
+		SELECT
+			u.id,
+			u.username,
+			u.email,
+			mu.joined_at
+		FROM meetup_user mu
+		JOIN user u ON mu.user_id = u.id
+		WHERE mu.meetup_id = ?
+	`
+
+	if err := s.sqlClient.SelectContext(ctx, &rows, query, meetupID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("unable to execute query due: %w", err)
+	}
+
+	return rows.ToJoinedPersons(), nil
+}
